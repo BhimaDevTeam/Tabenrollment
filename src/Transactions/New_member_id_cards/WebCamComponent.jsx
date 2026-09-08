@@ -11,7 +11,6 @@ const CameraComponent = ({ getImageUrl, capturedImage, aadharVerified }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [cameraStream, setCameraStream] = useState(null);
-  const loadedCustomerIdRef = useRef(null);
  
   useEffect(() => {
     if (selectedCustomerID) {

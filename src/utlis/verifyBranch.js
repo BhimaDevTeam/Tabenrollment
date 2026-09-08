@@ -8,9 +8,6 @@ const fromBase64 = (value) => {
 	}
 };
 
-const toBase64 = (value) => {
-	return btoa(encodeURIComponent(value));
-};
 
 // ─── Singapore branch codes — always valid, no DB lookup needed ───────────────
 const SINGAPORE_BRANCHES = ["LN", "LI"];
