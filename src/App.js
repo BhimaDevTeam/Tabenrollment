@@ -13,18 +13,22 @@ import PaymentSuccess from './Transactions/New_member_id_cards/Paymentsuccess';
 
 function App() {
   return (
-    <BrowserRouter basename="/vrudhitabenrollment">
-      <Routes>
-         <Route path="/" element={<Mobile/>}/>
-         {/* <Route path="/Mobile"  element={<Mobile/>}/> */}
-        <Route path="/MobileVer" element={<MobileVer/>}/>
-        <Route path="/TransitionsModal" element={<TransitionsModal/>}/>  
-        <Route path="/AadharVer" element={<AadharVer/>}/>
-        <Route path="/Mypage" element={<Mypage/>}/>
-        <Route path="/ekyc-customer" element={<EkycCustomerPage/>}/>
-        <Route path="/success-page/:linkId" element={<PaymentSuccess/>}/>
-      </Routes>
-     </BrowserRouter> 
+    <div>
+
+      <h1>HELLOW</h1>
+    </div>
+    // <BrowserRouter basename="/vrudhitabenrollment">
+    //   <Routes>
+    //      <Route path="/" element={<Mobile/>}/>
+    //      {/* <Route path="/Mobile"  element={<Mobile/>}/> */}
+    //     <Route path="/MobileVer" element={<MobileVer/>}/>
+    //     <Route path="/TransitionsModal" element={<TransitionsModal/>}/>  
+    //     <Route path="/AadharVer" element={<AadharVer/>}/>
+    //     <Route path="/Mypage" element={<Mypage/>}/>
+    //     <Route path="/ekyc-customer" element={<EkycCustomerPage/>}/>
+    //     <Route path="/success-page/:linkId" element={<PaymentSuccess/>}/>
+    //   </Routes>
+    //  </BrowserRouter> 
   );
 };
 
