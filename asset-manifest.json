@@ -1,0 +1,24 @@
+{
+  "files": {
+    "main.css": "/vrudhitabenrollment/static/css/main.a5665996.css",
+    "main.js": "/vrudhitabenrollment/static/js/main.c9eb9b51.js",
+    "static/js/453.b6748c65.chunk.js": "/vrudhitabenrollment/static/js/453.b6748c65.chunk.js",
+    "static/media/InterVariable-Italic.woff2": "/vrudhitabenrollment/static/media/InterVariable-Italic.e295f70fe3e2df296c7b.woff2",
+    "static/media/InterVariable.woff2": "/vrudhitabenrollment/static/media/InterVariable.a0e477f2f1f9d2376fde.woff2",
+    "static/media/primeicons.svg": "/vrudhitabenrollment/static/media/primeicons.6ed59f962963a4a73af2.svg",
+    "static/media/bootstrap-icons.woff?": "/vrudhitabenrollment/static/media/bootstrap-icons.39795c0b4513de014cf8.woff",
+    "static/media/bootstrap-icons.woff2?": "/vrudhitabenrollment/static/media/bootstrap-icons.b7bcc075b395c14ce8c2.woff2",
+    "static/media/primeicons.eot": "/vrudhitabenrollment/static/media/primeicons.ff0c4cd79b2ffca2de54.eot",
+    "static/media/primeicons.woff": "/vrudhitabenrollment/static/media/primeicons.8931fda1930c3bd21e96.woff",
+    "static/media/primeicons.ttf": "/vrudhitabenrollment/static/media/primeicons.a5c2a53d1ff7a9ff5933.ttf",
+    "static/media/primeicons.woff2": "/vrudhitabenrollment/static/media/primeicons.024b32cc7bf399b1a847.woff2",
+    "index.html": "/vrudhitabenrollment/index.html",
+    "main.a5665996.css.map": "/vrudhitabenrollment/static/css/main.a5665996.css.map",
+    "main.c9eb9b51.js.map": "/vrudhitabenrollment/static/js/main.c9eb9b51.js.map",
+    "453.b6748c65.chunk.js.map": "/vrudhitabenrollment/static/js/453.b6748c65.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a5665996.css",
+    "static/js/main.c9eb9b51.js"
+  ]
+}

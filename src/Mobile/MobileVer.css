@@ -1,0 +1,410 @@
+/* MobileVer.css */
+
+.mobiledropdowncontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  padding: 16px;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Soft brand backdrop — avoids cover-cropping the mascot */
+.mobilever-page {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(205, 154, 80, 0.16) 0%, transparent 42%),
+    radial-gradient(circle at 88% 78%, rgba(97, 65, 25, 0.1) 0%, transparent 45%),
+    linear-gradient(165deg, #fdf8f1 0%, #fff6e8 45%, #f3e4cf 100%);
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+.mobilever-mascot {
+  position: absolute;
+  left: 50%;
+  bottom: -2%;
+  transform: translateX(-50%);
+  width: min(420px, 88vw);
+  height: min(52vh, 460px);
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0.22;
+}
+
+.mobilever-mascot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  /* Knock out solid black plate behind the mascot art */
+  mix-blend-mode: multiply;
+  filter: contrast(1.05);
+}
+
+.mobilever-page > *:not(.mobilever-mascot) {
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 481px) {
+  .mobiledropdowncontainer {
+    padding: 24px;
+  }
+
+  .mobilever-mascot {
+    opacity: 0.2;
+    height: min(55vh, 520px);
+  }
+}
+
+@media (min-width: 1025px) {
+  .mobiledropdowncontainer {
+    padding: 30px;
+  }
+
+  .mobilever-mascot {
+    width: min(480px, 40vw);
+    opacity: 0.18;
+  }
+}
+
+.custom-select-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+@media (min-width: 481px) {
+  .custom-select-wrapper {
+    max-width: 90%;
+    padding: 20px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .custom-select-wrapper {
+    max-width: 500px;
+    padding: 20px;
+  }
+}
+
+  
+  .custom-select-wrapper label {
+    font-size: 18px; /* Slightly larger font size */
+    margin-bottom: 10px;
+  }
+  
+  .custom-select-wrapper select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    padding: 5px; 
+  }
+  .dropdown-container select{
+    
+    border: 1px solid #ccc;
+    padding: 5px;
+  }
+  
+  .customer-select {
+    width: 100%;
+    min-height: 40px;
+    padding: 5px;
+    font-size: 16px;
+  }
+  
+
+  /* Responsive styling */
+  @media (max-width: 768px) {
+    .custom-select-wrapper {
+      max-width: 90%; /* Adjust max width for tablets */
+    }
+  
+    .custom-select-wrapper label {
+      font-size: 16px; /* Smaller font size for tablets */
+    }
+  
+    .custom-select-wrapper select {
+      font-size: 14px; /* Smaller font size for tablets */
+      padding: 8px; /* Reduced padding for tablets */
+    }
+    
+  
+  }
+  
+  @media (max-width: 576px) {
+    .custom-select-wrapper {
+      max-width: 95%; /* Adjust max width for mobile devices */
+    
+    }
+  
+    .custom-select-wrapper label {
+      font-size: 14px; /* Smaller font size for mobile */
+    }
+  
+    .custom-select-wrapper select {
+      font-size: 12px; /* Smaller font size for mobile */
+      padding: 6px; /* Reduced padding for mobile */
+    }
+    
+
+  }
+  /* No scroll class for mobile and tablet */
+@media (max-width: 1024px) {
+    .no-scroll {
+        overflow: hidden; /* Prevent scrolling */
+        height: 100vh; /* Ensure it covers the viewport */
+    }
+}
+
+/* General paragraph styling */
+p {
+  font-size: 16px;
+  color:black /* Standard font size */
+}
+
+/* Responsive styling for paragraphs */
+@media (max-width: 1024px) {
+  p {
+      font-size: 15px; /* Slightly smaller font size for tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  p {
+      font-size: 14px; /* Smaller font size for mobile */
+  }
+}
+
+/* Toast container adjustments */
+.ToastContainer {
+  margin-top: 20px; /* Adjust if necessary */
+}
+
+/* Responsive adjustments for Toast container */
+@media (max-width: 1024px) {
+  .ToastContainer {
+      margin-top: 18px; /* Adjust margin for tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .ToastContainer {
+      margin-top: 15px; /* Adjust margin for mobile */
+  }
+}
+
+/* Customer details styling */
+.customer-details {
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+/* Responsive adjustments for customer details */
+@media (max-width: 1024px) {
+  .customer-details {
+      padding: 9px; /* Slightly reduced padding for tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .customer-details {
+      padding: 8px; /* Reduced padding for mobile */
+  }
+}
+
+/* Customer info paragraph styling */
+.customer-info p {
+  margin: 5px 0; /* Spacing between paragraphs */
+}
+
+/* Responsive adjustments for customer info paragraphs */
+@media (max-width: 1024px) {
+  .customer-info p {
+      margin: 4px 0; /* Adjust margin for tablets */
+      font-size: 15px; /* Smaller font size for tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .customer-info p {
+      margin: 4px 0; /* Adjust margin for mobile */
+      font-size: 14px; /* Smaller font size for mobile */
+  }
+}
+
+/* Button secondary styling */
+.btn-secondary {
+  margin-top: 20px; /* Space above the button */
+}
+
+/* Responsive adjustments for button */
+@media (max-width: 1024px) {
+  .btn-secondary {
+      margin-top: 18px; /* Adjust margin for tablets */
+      font-size: 15px; /* Smaller font size for tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .btn-secondary {
+      margin-top: 15px; /* Adjust margin for mobile */
+      font-size: 14px; /* Smaller font size for mobile */
+  }
+}
+
+/* Error message styling - uncomment if needed */
+.errors {
+  color: #d9534f; /* Bootstrap error color */
+  font-size: 16px; 
+  margin-bottom: 20px; 
+}
+
+/* Responsive adjustments for error messages */
+@media (max-width: 1024px) {
+  .errors {
+      font-size: 15px; /* Smaller font size for tablets */
+      margin-bottom: 18px; /* Adjust margin for tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .errors {
+      font-size: 14px; /* Smaller font size for mobile */
+      margin-bottom: 15px; /* Adjust margin for mobile */
+  }
+  
+.no-scroll {
+  overflow: hidden; /* Prevent scrolling */
+  height: 100%; /* Ensure the height covers the viewport */
+}
+}
+
+
+
+.no-scroll {
+  overflow: hidden; /* Prevent scrolling */
+  height: 100%; /* Ensure the height covers the viewport */
+}
+
+/* Base styles for the warning message */
+.warning {
+  color: #000000;
+  font-size: 1rem; /* Base font size for mobile screens */
+  font-weight: bold;
+  margin-top: 10px;
+  
+  padding: 10px; /* Add padding for better spacing on small screens */
+  background-color: #ffffff; /* Light red background to highlight the message */
+  border-radius: 5px; /* Rounded corners */
+   box-sizing: border-box;
+   transition: margin-top 0.3s ease; 
+   max-width: 95%; 
+   /* text-align: justify;/* Ensure no extra space between words */
+   /* word-spacing: 0px !important;
+   letter-spacing: normal; 
+   word-break: break-word;
+   line-height: 1.5; */ 
+}
+.warning.dropdown-open {
+  margin-top: 180px; /* Adjusted to match the height of the dropdown */
+}
+/* For larger screens like tablets (min-width: 768px) */
+@media (min-width: 768px) {
+  .warning {
+    font-size: 1.1rem; /* Slightly larger font size for tablets */
+    padding: 15px; /* Add more padding for larger screens */
+    max-width: 90%; /* Center and constrain width */
+    margin: 20px auto; /* Center margin for larger devices */
+  }
+}
+
+/* For desktop (min-width: 1024px) */
+@media (min-width: 1024px) {
+  .warning {
+    font-size: 1.2rem; /* Larger font size for desktops */
+    padding: 20px;
+    max-width: 80%; /* Further constrain width for larger screens */
+    margin: 25px auto;
+
+  }
+}
+.custom-select-wrapper ul {
+  list-style-type: none; /* Removes bullet points */
+  padding: 0; /* Removes padding */
+  margin: 0; /* Removes margin */
+}
+
+.mobiledropdowncontainer .custom-select-wrapper li {
+  cursor: pointer; /* Changes the cursor to a pointer for better UX */
+  padding: 8px; /* Padding for the list items */
+}
+/* Responsive styling for tablets and smaller devices */
+@media (max-width: 1024px) {
+  .dropdown-container select,
+  .customer-select {
+    font-size: 15px; /* Adjust font size for tablets */
+    padding: 4px; /* Adjust padding for tablets */
+  }
+}
+
+@media (max-width: 768px) {
+  .dropdown-container select,
+  .customer-select {
+    font-size: 14px; /* Adjust font size for mobile */
+    padding: 3px; /* Adjust padding for mobile */
+    min-height: 38px; /* Adjust minimum height for mobile */
+  }
+}
+
+/* Extra adjustments for iPhone 12 and similar screen sizes */
+@media (max-width: 600px) {
+  .dropdown-container select,
+  .customer-select {
+    font-size: 13px; /* Smaller font size for smaller devices */
+    padding: 2px; /* Minimal padding for small devices */
+    min-height: 36px; /* Adjust height for small devices */
+  }
+}
+
+/* desktop and tab */
+@media (max-width: 768px) {
+  .subscriber-select-div {
+    width: 100% !important;
+  }
+
+ 
+}
+/* mble */
+@media (min-width: 768px) {
+  .subscriber-select-div {
+    width: 100% !important;
+  }
+}
+
+/* MobileVer page overrides body padding */
+body {
+  padding: 0px !important;
+}

@@ -1,0 +1,232 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Work Sans, quiche-sans;
+}
+
+body {
+  overflow: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  max-width: 100%;
+  background: #e0bf91 !important;
+  /* Responsive padding - 0 on top */
+  padding: 0 8px 8px 8px;
+}
+
+/* Tablet */
+@media (min-width: 481px) {
+  body {
+    padding: 0 14px 14px 14px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1025px) {
+  body {
+    padding: 0 20px 20px 20px;
+  }
+}
+
+/* ─── Compact rates + country header (single row) ─── */
+.app-rates-bar {
+  background: linear-gradient(103deg, #3d1e08 0%, #6b3d1c 40%, #8c5230 70%, #3d1e08 100%);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(212,175,55,0.45);
+  box-shadow: 0 4px 14px rgba(40,15,4,0.28);
+}
+
+.app-rates-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.app-rates-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.app-rates-badge {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(212, 175, 55, 0.22);
+  border: 1px solid rgba(252, 222, 126, 0.4);
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 9px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: #fcde7e;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.app-rate-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.app-rate-label {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.app-rate-label.silver { color: #c8d8ea; }
+.app-rate-label.gold { color: #fcde7e; }
+
+.app-rate-value {
+  color: #fff;
+  font-weight: 700;
+  background: rgba(255,255,255,0.12);
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.app-rate-sep {
+  opacity: 0.35;
+  color: #fcde7e;
+  flex-shrink: 0;
+}
+
+.app-country-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(252, 222, 126, 0.4);
+  border-radius: 14px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.app-country-lock {
+  color: #fcde7e;
+  font-size: 10px;
+}
+
+.app-country-active {
+  background: linear-gradient(135deg, #d4af37, #f6d365);
+  color: #1a0f07;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.app-country-btn {
+  background: transparent;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  min-height: 28px;
+}
+
+.app-country-btn.is-active {
+  background: linear-gradient(135deg, #d4af37, #f6d365);
+  color: #1a0f07;
+}
+
+@media (max-width: 480px) {
+  .app-rates-bar {
+    padding: 5px 8px;
+    border-radius: 8px;
+  }
+
+  .app-rates-badge {
+    padding: 2px 5px;
+    font-size: 8px;
+  }
+
+  .app-rate-label {
+    font-size: 9px;
+  }
+
+  .app-rate-value {
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+
+  .app-country-name,
+  .app-country-btn {
+    font-size: 10px;
+  }
+
+  .app-country-btn {
+    min-height: 26px;
+    padding: 1px 6px;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-rates-badge::after {
+    content: none;
+  }
+
+  .app-rates-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+  }
+
+  .app-rate-label {
+    font-size: 11px;
+  }
+
+  .app-rate-value {
+    font-size: 12px;
+    padding: 2px 8px;
+  }
+
+  .app-country-active .app-country-name {
+    font-size: 11px;
+  }
+
+  .app-country-active .app-country-name::after {
+    content: none;
+  }
+}
+
+.app-country-full { display: none; }
+.app-country-short { display: inline; }
+
+@media (min-width: 600px) {
+  .app-country-short { display: none; }
+  .app-country-full { display: inline; }
+
+  .app-rates-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+  }
+
+  .app-rate-label {
+    font-size: 11px;
+  }
+
+  .app-rate-value {
+    font-size: 12px;
+    padding: 2px 8px;
+  }
+}
