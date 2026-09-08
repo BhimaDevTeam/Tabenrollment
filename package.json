@@ -2,7 +2,7 @@
   "name": "myvrudhi",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/vrudhitabenrollment",
+  "homepage": "/",
   "dependencies": {
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
@@ -40,6 +40,7 @@
   "scripts": {
     "start": "cross-env PORT=8035 react-scripts start",
     "build": "react-scripts build",
+    "build:iis": "cross-env PUBLIC_URL=/vrudhitabenrollment react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
