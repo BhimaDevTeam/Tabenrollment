@@ -39,15 +39,8 @@ const Header = ({ branch }) => {
     gold24: null,
     gold18: null,
   });
-  const [displayBranch, setDisplayBranch] = useState(null);
+  const [displayBranch, setDisplayBranch] = useState("KRM");
 
-  const fromBase64 = (val) => {
-    try {
-      return decodeURIComponent(atob(val));
-    } catch {
-      return val;
-    }
-  };
 
   // ─── Decode branch: always try Base64 (TE4= → LN, S1JN → KRM, etc.) ───────
   const decodeBranch = (raw) => {
@@ -86,15 +79,10 @@ const Header = ({ branch }) => {
       }
     }
 
-    if (cleanBranch) {
-      const finalBranch = cleanBranch.toUpperCase();
-      setDisplayBranch(finalBranch);
-      fetchRates(finalBranch);
-    } else {
-      setDisplayBranch(null);
-      // Fetch default rates without showing a misleading branch badge
-      fetchRates("KRM");
-    }
+    // Default to "KRM" when no branch is specified in URL
+    const finalBranch = (cleanBranch || "KRM").toUpperCase();
+    setDisplayBranch(finalBranch);
+    fetchRates(finalBranch);
   }, [branch, location.search, location.pathname, selectedCountry]); // re-fetch when country changes (India ↔ Singapore)
 
   const fetchRates = async (branchCode) => {
