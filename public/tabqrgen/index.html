@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BHIMA QR Enrollment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="qrcode.min.js"></script>
+    <script>
+        if (typeof QRCode === 'undefined') {
+            document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
+        }
+    </script>
+    <script src="logo-data.js"></script>
+    <style>
+        :root {
+            --primary: #a87c2a;
+            --primary-hover: #8c6620;
+            --primary-light: rgba(168, 124, 42, 0.08);
+            --gold-accent: #d4a84b;
+            --gold-border: #e8dcbf;
+            --text-dark: #2c1f10;
+            --text-muted: #6e5842;
+            --text-light: #9e8a75;
+            --bg-card: #ffffff;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #faf7f2 0%, #f3ede2 50%, #eee4cf 100%);
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .compact-container {
+            width: 100%;
+            max-width: 820px;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--gold-border);
+            box-shadow: 0 12px 36px rgba(90, 61, 26, 0.09), 0 2px 6px rgba(0, 0, 0, 0.03);
+            padding: 24px 28px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .compact-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #d4a84b 0%, #a87c2a 50%, #d4a84b 100%);
+        }
+
+        .compact-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 28px;
+            align-items: center;
+        }
+
+        /* Left Side: Controls & Info */
+        .info-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .brand-logo {
+            height: 36px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .brand-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--gold-border);
+        }
+
+        .brand-tagline {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .page-title {
+            color: var(--primary);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 3px;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .branch-select {
+            width: 100%;
+            padding: 10px 14px;
+            padding-right: 36px;
+            border: 2px solid var(--gold-border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            background-color: #ffffff;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .branch-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(168, 124, 42, 0.15);
+        }
+
+        .select-arrow {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+
+        .select-arrow svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--primary);
+        }
+
+        .url-box {
+            margin-bottom: 18px;
+        }
+
+        .url-box label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .url-input-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 8px 10px;
+            font-size: 12px;
+            border: 1px solid var(--gold-border);
+            border-radius: 6px;
+            background: #faf8f5;
+            color: var(--primary);
+            outline: none;
+            font-family: 'Consolas', 'Courier New', monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .copy-btn {
+            background: #f4ede1;
+            color: var(--primary);
+            border: 1px solid var(--gold-border);
+            border-radius: 6px;
+            padding: 0 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .copy-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+
+        .copy-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .copy-btn.copied {
+            background: #2e7d32;
+            color: #ffffff;
+            border-color: #2e7d32;
+        }
+
+        .download-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #b88d38 0%, #9a7024 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 11px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(168, 124, 42, 0.25);
+            transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+
+        .download-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .download-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #a87c2a 0%, #825c1a 100%);
+            box-shadow: 0 6px 16px rgba(168, 124, 42, 0.35);
+            transform: translateY(-1px);
+        }
+
+        .download-btn:disabled {
+            background: #dcd4c7;
+            color: #9a9184;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Right Side: QR Card Preview */
+        .qr-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fbf9f6;
+            border: 1px solid var(--gold-border);
+            border-radius: 12px;
+            padding: 18px 14px;
+            text-align: center;
+        }
+
+        .qr-frame {
+            background: #ffffff;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 8px;
+            box-shadow: 0 4px 14px rgba(168, 124, 42, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 214px;
+            height: 214px;
+            position: relative;
+        }
+
+        .qr-placeholder {
+            width: 196px;
+            height: 196px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
+            font-size: 12px;
+            background: #faf7f2;
+            border-radius: 6px;
+            border: 1px dashed var(--gold-accent);
+            padding: 12px;
+            line-height: 1.4;
+            gap: 8px;
+        }
+
+        .qr-placeholder svg {
+            width: 34px;
+            height: 34px;
+            opacity: 0.55;
+            stroke: var(--primary);
+        }
+
+        #qrcode canvas, #qrcode img {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .branch-badge {
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: #f4ede1;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            border: 1px solid var(--gold-border);
+            transition: all 0.2s ease;
+        }
+
+        .branch-badge.active {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+        }
+
+        .qr-hint {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        .brand-footer-text {
+            color: var(--gold-accent);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            margin-top: 10px;
+        }
+
+        /* Responsive Mobile Layout */
+        @media (max-width: 720px) {
+            body {
+                padding: 12px;
+                min-height: 100vh;
+                height: auto;
+            }
+
+            .compact-container {
+                padding: 18px 16px;
+                max-width: 440px;
+            }
+
+            .compact-grid {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .qr-col {
+                padding: 14px 10px;
+            }
+
+            .qr-frame {
+                width: 200px;
+                height: 200px;
+                padding: 6px;
+            }
+
+            .qr-placeholder {
+                width: 186px;
+                height: 186px;
+            }
+
+            .page-title {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="compact-container">
+        <div class="compact-grid">
+            <!-- Left Column: Controls & Information -->
+            <div class="info-col">
+                <div class="brand-header">
+                    <img src="Images/bhima.png" alt="BHIMA" class="brand-logo" id="headerLogo">
+                    <div class="brand-divider"></div>
+                    <span class="brand-tagline">QR Generator</span>
+                </div>
+
+                <div class="page-title" id="pageTitle">TAB ENROLLMENT</div>
+                <div class="page-subtitle">Select branch code to generate & download QR</div>
+
+                <div class="form-group">
+                    <label for="branchCode">Branch Code</label>
+                    <div class="select-wrapper">
+                        <select id="branchCode" class="branch-select">
+                            <option value="" disabled selected>-- Select Branch Code --</option>
+                            <option value="BGM">BGM</option>
+                            <option value="BOS">BOS</option>
+                            <option value="DKN">DKN</option>
+                            <option value="DKN2">DKN2</option>
+                            <option value="HBL">HBL</option>
+                            <option value="HBR">HBR</option>
+                            <option value="HOD">HOD</option>
+                            <option value="HSL">HSL</option>
+                            <option value="HSN">HSN</option>
+                            <option value="HSR">HSR</option>
+                            <option value="JNR">JNR</option>
+                            <option value="JNR2">JNR2</option>
+                            <option value="KRM">KRM</option>
+                            <option value="MLM">MLM</option>
+                            <option value="MNG">MNG</option>
+                            <option value="MRT">MRT</option>
+                            <option value="PNX">PNX</option>
+                            <option value="RJR">RJR</option>
+                            <option value="RJY">RJY</option>
+                            <option value="RRN">RRN</option>
+                            <option value="SMG">SMG</option>
+                            <option value="TNR">TNR</option>
+                            <option value="UDP">UDP</option>
+                            <option value="VJD">VJD</option>
+                        </select>
+                        <div class="select-arrow">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="url-box">
+                    <label for="urlDisplay">Enrollment Link</label>
+                    <div class="url-input-group">
+                        <input type="text" id="urlDisplay" class="url-input" readonly placeholder="Select a branch to view URL">
+                        <button type="button" id="copyBtn" class="copy-btn" onclick="copyUrl()" disabled title="Copy enrollment URL">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            <span id="copyText">Copy</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button class="download-btn" id="downloadBtn" onclick="downloadQR()" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Download Branded QR Card</span>
+                </button>
+            </div>
+
+            <!-- Right Column: Live QR Preview -->
+            <div class="qr-col">
+                <div class="qr-frame">
+                    <div id="qrcode"></div>
+                </div>
+                <div class="branch-badge" id="branchBadge">No Branch Selected</div>
+                <div class="qr-hint">Scan with mobile camera to enroll</div>
+                <div class="brand-footer-text">BHIMA</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Use embedded base64 logo if external file is unavailable
+        if (window.BHIMA_LOGO_DATA) {
+            const logoEl = document.getElementById('headerLogo');
+            if (logoEl) logoEl.src = window.BHIMA_LOGO_DATA;
+        }
+
+        // 1. Encoding (Encrypting)
+        const toBase64 = (value) => {
+            return btoa(encodeURIComponent(value));
+        };
+
+        // 2. Decoding (Decrypting)
+        const fromBase64 = (value) => {
+            try {
+                return decodeURIComponent(atob(value));
+            } catch {
+                return value;
+            }
+        };
+
+        // Check if input is Base64 encoded
+        const isBase64 = (str) => {
+            if (!str || typeof str !== 'string') return false;
+            const trimmed = str.trim();
+            if (!/^[A-Za-z0-9+/]+={0,2}$/.test(trimmed)) return false;
+            try {
+                const decoded = decodeURIComponent(atob(trimmed));
+                if (/^[A-Za-z0-9 _-]+$/.test(decoded) && decoded !== trimmed) {
+                    return toBase64(decoded) === trimmed;
+                }
+            } catch {
+                return false;
+            }
+            return false;
+        };
+
+        let qrcode = null;
+        let currentBranchName = '';
+
+        function generateQR() {
+            const branchSelect = document.getElementById('branchCode');
+            const selectedBranch = branchSelect.value.trim();
+            const container = document.getElementById('qrcode');
+            const urlDisplay = document.getElementById('urlDisplay');
+            const pageTitle = document.getElementById('pageTitle');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const branchBadge = document.getElementById('branchBadge');
+
+            if (!selectedBranch) {
+                container.innerHTML = `
+                    <div class="qr-placeholder">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        <span>Select a branch code to generate QR</span>
+                    </div>
+                `;
+                urlDisplay.value = '';
+                pageTitle.textContent = 'TAB ENROLLMENT';
+                currentBranchName = '';
+                if (downloadBtn) downloadBtn.disabled = true;
+                if (copyBtn) copyBtn.disabled = true;
+                if (branchBadge) {
+                    branchBadge.textContent = 'No Branch Selected';
+                    branchBadge.classList.remove('active');
+                }
+                return;
+            }
+
+            if (downloadBtn) downloadBtn.disabled = false;
+            if (copyBtn) copyBtn.disabled = false;
+
+            const encodedBranch = toBase64(selectedBranch);
+            currentBranchName = selectedBranch;
+
+            const url = `https://tabenrollment.bhimastore.com/vrudhitabenrollment?branch=${encodedBranch}`;
+            urlDisplay.value = url;
+            pageTitle.textContent = `TAB ENROLLMENT (${selectedBranch})`;
+
+            if (branchBadge) {
+                branchBadge.textContent = `Branch: ${selectedBranch}`;
+                branchBadge.classList.add('active');
+            }
+
+            container.innerHTML = '';
+
+            qrcode = new QRCode(container, {
+                text: url,
+                width: 196,
+                height: 196,
+                colorDark: '#5a3d1a',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        function copyUrl() {
+            const urlDisplay = document.getElementById('urlDisplay');
+            if (!urlDisplay || !urlDisplay.value) return;
+
+            const copyBtn = document.getElementById('copyBtn');
+            const copyText = document.getElementById('copyText');
+
+            const setCopiedUI = () => {
+                if (copyText) copyText.textContent = 'Copied!';
+                copyBtn.classList.add('copied');
+                setTimeout(() => {
+                    if (copyText) copyText.textContent = 'Copy';
+                    copyBtn.classList.remove('copied');
+                }, 1800);
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(urlDisplay.value).then(setCopiedUI).catch(() => {
+                    urlDisplay.select();
+                    document.execCommand('copy');
+                    setCopiedUI();
+                });
+            } else {
+                urlDisplay.select();
+                document.execCommand('copy');
+                setCopiedUI();
+            }
+        }
+
+        document.getElementById('branchCode').addEventListener('change', generateQR);
+
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const branchParam = urlParams.get('branch');
+            const branchSelect = document.getElementById('branchCode');
+
+            if (branchParam) {
+                let targetCode = branchParam.trim().toUpperCase();
+                if (isBase64(targetCode)) {
+                    targetCode = fromBase64(targetCode).toUpperCase();
+                }
+                if (Array.from(branchSelect.options).some(opt => opt.value === targetCode)) {
+                    branchSelect.value = targetCode;
+                }
+            }
+
+            generateQR();
+        });
+
+        function downloadQR() {
+            if (!currentBranchName) {
+                alert('Please select a branch code first.');
+                return;
+            }
+
+            const qrCanvas = document.querySelector('#qrcode canvas');
+            const qrImg = document.querySelector('#qrcode img');
+
+            if (!qrCanvas && (!qrImg || !qrImg.src)) {
+                alert('Please generate a QR code first.');
+                return;
+            }
+
+            const cardWidth = 700;
+            const cardHeight = 900;
+            const cardCanvas = document.createElement('canvas');
+            cardCanvas.width = cardWidth;
+            cardCanvas.height = cardHeight;
+            const ctx = cardCanvas.getContext('2d');
+
+            const encodedBranch = toBase64(currentBranchName);
+            const url = `https://tabenrollment.bhimastore.com/vrudhitabenrollment?branch=${encodedBranch}`;
+
+            function renderAndExport(logoImage) {
+                // 1. Clean white background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, cardWidth, cardHeight);
+
+                // Subtle outer decorative gold border
+                ctx.strokeStyle = '#e8dcbf';
+                ctx.lineWidth = 2;
+                drawRoundedRect(ctx, 16, 16, cardWidth - 32, cardHeight - 32, 20);
+                ctx.stroke();
+
+                // 2. BHIMA Logo
+                if (logoImage && logoImage.width > 0) {
+                    const logoTargetWidth = 260;
+                    const logoTargetHeight = logoTargetWidth * (logoImage.naturalHeight / logoImage.naturalWidth);
+                    const logoX = (cardWidth - logoTargetWidth) / 2;
+                    const logoY = 48;
+                    ctx.drawImage(logoImage, logoX, logoY, logoTargetWidth, logoTargetHeight);
+                }
+
+                // 3. Golden decorative arc
+                ctx.beginPath();
+                ctx.moveTo(cardWidth / 2 - 65, 208);
+                ctx.quadraticCurveTo(cardWidth / 2, 188, cardWidth / 2 + 65, 208);
+                ctx.strokeStyle = '#d4a84b';
+                ctx.lineWidth = 3.5;
+                ctx.stroke();
+
+                // 4. Title
+                ctx.fillStyle = '#a87c2a';
+                ctx.font = 'bold 26px "Segoe UI", Tahoma, Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`TAB ENROLLMENT (${currentBranchName})`, cardWidth / 2, 250);
+
+                // 5. Subtitle
+                ctx.fillStyle = '#5a4a3a';
+                ctx.font = '17px "Segoe UI", Tahoma, Arial, sans-serif';
+                ctx.fillText('Scan to enroll', cardWidth / 2, 288);
+
+                // 6. QR Code Box (Rounded frame)
+                const boxSize = 380;
+                const boxX = (cardWidth - boxSize) / 2;
+                const boxY = 325;
+                ctx.strokeStyle = '#a87c2a';
+                ctx.lineWidth = 3;
+                ctx.fillStyle = '#ffffff';
+                drawRoundedRect(ctx, boxX, boxY, boxSize, boxSize, 16);
+                ctx.fill();
+                ctx.stroke();
+
+                // 7. QR Code Image inside Box
+                const qrSize = 320;
+                const qrX = (cardWidth - qrSize) / 2;
+                const qrY = boxY + (boxSize - qrSize) / 2;
+                ctx.imageSmoothingEnabled = false;
+                if (qrCanvas) {
+                    ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+                } else if (qrImg) {
+                    ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+                }
+                ctx.imageSmoothingEnabled = true;
+
+                // 8. URL Display Text
+                ctx.fillStyle = '#a87c2a';
+                let urlFontSize = 13.5;
+                ctx.font = `${urlFontSize}px "Segoe UI", Tahoma, Arial, sans-serif`;
+                while (ctx.measureText(url).width > (cardWidth - 60) && urlFontSize > 9) {
+                    urlFontSize -= 0.5;
+                    ctx.font = `${urlFontSize}px "Segoe UI", Tahoma, Arial, sans-serif`;
+                }
+                ctx.textAlign = 'center';
+                ctx.fillText(url, cardWidth / 2, 742);
+
+                // 9. Footer Text
+                ctx.fillStyle = '#a87c2a';
+                ctx.font = 'bold 22px "Segoe UI", Tahoma, Arial, sans-serif';
+                ctx.fillText('B H I M A', cardWidth / 2, 825);
+
+                // 10. Download
+                try {
+                    const dataUrl = cardCanvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.href = dataUrl;
+                    link.download = `bhima-tabenrollment-${currentBranchName}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (err) {
+                    console.error('Failed to export card canvas:', err);
+                    if (qrCanvas) {
+                        const link = document.createElement('a');
+                        link.href = qrCanvas.toDataURL('image/png');
+                        link.download = `bhima-qr-${currentBranchName}.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                }
+            }
+
+            let exported = false;
+            const safeExport = (img) => {
+                if (exported) return;
+                exported = true;
+                renderAndExport(img);
+            };
+
+            const logo = new Image();
+            logo.onload = () => safeExport(logo);
+            logo.onerror = () => safeExport(null);
+            logo.src = window.BHIMA_LOGO_DATA || 'Images/bhima.png';
+
+            if (logo.complete && logo.naturalWidth > 0) {
+                safeExport(logo);
+            }
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+    </script>
+</body>
+</html>
