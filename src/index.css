@@ -74,6 +74,21 @@ body {
   flex-shrink: 0;
 }
 
+.app-rates-branch-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(252, 222, 126, 0.35);
+  border-radius: 12px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .app-rate-item {
   display: inline-flex;
   align-items: center;
@@ -211,10 +226,14 @@ body {
 
 .app-country-full { display: none; }
 .app-country-short { display: inline; }
+.app-branch-full { display: none; }
+.app-branch-short { display: inline; }
 
 @media (min-width: 600px) {
   .app-country-short { display: none; }
   .app-country-full { display: inline; }
+  .app-branch-short { display: none; }
+  .app-branch-full { display: inline; }
 
   .app-rates-badge {
     font-size: 10px;

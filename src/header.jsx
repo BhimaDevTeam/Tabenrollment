@@ -155,6 +155,13 @@ const Header = ({ branch }) => {
         <div className="app-rates-row">
           <div className="app-rates-left">
             <span className="app-rates-badge">✦ RATES</span>
+            {displayBranch && (
+              <span className="app-rates-branch-badge" title={`Branch Code: ${displayBranch}`}>
+                <span style={{ fontSize: "10px", color: "#fcde7e" }}>📍</span>
+                <span className="app-branch-full">Branch: {displayBranch}</span>
+                <span className="app-branch-short">{displayBranch}</span>
+              </span>
+            )}
             <span className="app-rate-item">
               <span className="app-rate-label silver">Silver</span>
               <span className="app-rate-value">{silverRate}</span>
