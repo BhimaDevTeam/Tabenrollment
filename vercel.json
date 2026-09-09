@@ -1,6 +1,38 @@
 {
   "rewrites": [
     {
+      "source": "/vrudhitabenrollment/static/:path*",
+      "destination": "/static/:path*"
+    },
+    {
+      "source": "/vrudhitabenrollment/images/:path*",
+      "destination": "/images/:path*"
+    },
+    {
+      "source": "/vrudhitabenrollment/tabqrgen/:path*",
+      "destination": "/tabqrgen/:path*"
+    },
+    {
+      "source": "/vrudhitabenrollment/tabqrgen",
+      "destination": "/tabqrgen/index.html"
+    },
+    {
+      "source": "/vrudhitabenrollment/manifest.json",
+      "destination": "/manifest.json"
+    },
+    {
+      "source": "/vrudhitabenrollment/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/vrudhitabenrollment/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/vrudhitabenrollment/:path*",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
