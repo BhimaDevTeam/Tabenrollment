@@ -39,7 +39,7 @@ const Header = ({ branch }) => {
     gold24: null,
     gold18: null,
   });
-  const [displayBranch, setDisplayBranch] = useState("KRM");
+  const [displayBranch, setDisplayBranch] = useState(null);
 
   const fromBase64 = (val) => {
     try {
@@ -49,39 +49,53 @@ const Header = ({ branch }) => {
     }
   };
 
-  // ─── Decode branch: always try Base64 (TE4= → LN, etc.) ───────────────────
+  // ─── Decode branch: always try Base64 (TE4= → LN, S1JN → KRM, etc.) ───────
   const decodeBranch = (raw) => {
     if (!raw) return null;
+    const value = String(raw).trim();
     try {
-      const decoded = decodeURIComponent(atob(raw));
+      const decoded = decodeURIComponent(atob(value));
       // Only accept if decoded result looks like a plain branch code (letters/digits)
-      if (/^[A-Za-z0-9_-]+$/.test(decoded)) return decoded;
+      if (/^[A-Za-z0-9_-]+$/.test(decoded)) return decoded.toUpperCase();
     } catch {}
-    return raw; // return as-is if not valid Base64
+    return value.toUpperCase(); // return as-is if not valid Base64
   };
 
   useEffect(() => {
-    // Priority 1: Use the already-decoded branch saved by Mobile.jsx
-    const storedDecoded = localStorage.getItem("decodedBranch");
+    // Priority 1: Read from prop or URL query param directly
+    let raw = branch;
+    if (!raw && typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      raw = urlParams.get("branch") || urlParams.get("BRANCH") || urlParams.get("Branch") || null;
+    }
 
-    let cleanBranch = storedDecoded;
-
-    if (!cleanBranch) {
-      // Priority 2: Read from prop or URL param
-      let raw = branch;
-      if (!raw) {
-        const urlParams = new URLSearchParams(window.location.search);
-        raw = urlParams.get("branch") || urlParams.get("BRANCH") || null;
-      }
-      if (raw) {
-        cleanBranch = decodeBranch(raw);
+    let cleanBranch = null;
+    if (raw) {
+      cleanBranch = decodeBranch(raw);
+    } else if (typeof window !== "undefined") {
+      // Priority 2: Use localStorage ONLY if on an inner enrollment subpage
+      const currentPath = (location.pathname || window.location.pathname || "").toLowerCase();
+      const isSubPage =
+        currentPath.includes("mobilever") ||
+        currentPath.includes("mypage") ||
+        currentPath.includes("ekyc") ||
+        currentPath.includes("success-page") ||
+        currentPath.includes("aadharver");
+      if (isSubPage) {
+        cleanBranch = localStorage.getItem("decodedBranch");
       }
     }
 
-    const finalBranch = (cleanBranch || "KRM").toUpperCase();
-    setDisplayBranch(finalBranch);
-    fetchRates(finalBranch);
-  }, [branch, selectedCountry]); // re-fetch when country changes (India ↔ Singapore)
+    if (cleanBranch) {
+      const finalBranch = cleanBranch.toUpperCase();
+      setDisplayBranch(finalBranch);
+      fetchRates(finalBranch);
+    } else {
+      setDisplayBranch(null);
+      // Fetch default rates without showing a misleading branch badge
+      fetchRates("KRM");
+    }
+  }, [branch, location.search, location.pathname, selectedCountry]); // re-fetch when country changes (India ↔ Singapore)
 
   const fetchRates = async (branchCode) => {
     // Detect Singapore by Redux state OR by branch code directly (handles first load race)

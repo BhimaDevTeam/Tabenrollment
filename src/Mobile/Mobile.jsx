@@ -283,6 +283,7 @@ const Mobile = () => {
   useEffect(() => {
     async function bootstrapBranch() {
       if (!branch) {
+        clearEnrollmentCache();
         setShowInvalidBranchModal(true);
         return;
       }
@@ -308,6 +309,7 @@ const Mobile = () => {
       setIsBranchValid(branchValidity);
 
       if (!branchValidity) {
+        clearEnrollmentCache();
         setShowInvalidBranchModal(true);
         return;
       }
