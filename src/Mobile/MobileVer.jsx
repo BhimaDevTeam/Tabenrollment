@@ -8,7 +8,7 @@ import { parseJSON } from "date-fns";
 import { setCustomer, setSelectedCustomerID, setIsOtherCustomer } from "../redux/customer/customerSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { calculateAge } from "../utlis/calculateAge";
-import { Mobileverification } from "../apiurl";
+import { Mobileverification, LegacyMobileverification } from "../apiurl";
 
 const MobileVer = () => {
   const { customer, selectedCountry } = useSelector(state => state.customer || {});
@@ -55,23 +55,98 @@ const MobileVer = () => {
     const countryCode = isSingapore ? "sg" : "in";
 
     try {
-      const response = await fetch(`${Mobileverification}/${phoneNo}?country=${encodeURIComponent(countryStr)}&countryCode=${countryCode}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "country-code": countryCode,
-          "country": countryStr,
-        },
-      });
+      let res = null;
 
-      if (!response.ok) {
+      if (isSingapore) {
+        const response = await fetch(
+          `${Mobileverification}/${phoneNo}?country=${encodeURIComponent(countryStr)}&countryCode=${countryCode}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "country-code": countryCode,
+              country: countryStr,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          dispatch(setCustomer([]));
+          dispatch(setSelectedCustomerID({}));
+          navigate("/Mypage", {
+            state: {
+              phoneNo,
+              selectedOption: "withoutAadhar",
+              aadharVerification: 0,
+              selectedScheme,
+              branch,
+            },
+          });
+          return;
+        }
+
+        res = await response.json();
+      } else {
+        // For India: use CRM API to get customer details after OTP validation
+        try {
+          const crmResponse = await fetch(`${LegacyMobileverification}/${phoneNo}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (crmResponse.ok) {
+            const crmData = await crmResponse.json();
+            if (Array.isArray(crmData) && crmData.length > 0) {
+              res = crmData;
+            }
+          }
+        } catch (crmErr) {
+          console.warn("CRM GetCustomerDetails fetch error, checking fallback:", crmErr);
+        }
+
+        // Fallback to collection API if CRM returned empty/404
+        if (!res) {
+          try {
+            const fallbackResponse = await fetch(
+              `${Mobileverification}/${phoneNo}?country=${encodeURIComponent(countryStr)}&countryCode=${countryCode}`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                  "country-code": countryCode,
+                  country: countryStr,
+                },
+              }
+            );
+            if (fallbackResponse.ok) {
+              const fbData = await fallbackResponse.json();
+              if (Array.isArray(fbData) ? fbData.length > 0 : fbData?.customers?.length > 0 || fbData?.primaryRecord) {
+                res = fbData;
+              }
+            }
+          } catch (fbErr) {
+            console.warn("Fallback collection API error:", fbErr);
+          }
+        }
+      }
+
+      if (!res) {
         dispatch(setCustomer([]));
         dispatch(setSelectedCustomerID({}));
-        navigate("/Mypage", { state: { phoneNo, selectedOption: "withoutAadhar", aadharVerification: 0, selectedScheme, branch } });
+        navigate("/Mypage", {
+          state: {
+            phoneNo,
+            selectedOption: "withoutAadhar",
+            aadharVerification: 0,
+            selectedScheme,
+            branch,
+          },
+        });
         return;
       }
 
-      const res = await response.json();
       let rawList = [];
       if (Array.isArray(res)) {
         rawList = res;
@@ -92,7 +167,12 @@ const MobileVer = () => {
 
       const data = rawList.map(e => {
         const custName = e.Cust_Name || e.CustomerName || e.Name || e.subscriberName || "";
-        const imgUrl = e.ImageURL || e.ImageUrl || e.Image || res?.primaryRecord?.ImageURL || "";
+        const docImg = Array.isArray(e.Documents) ? e.Documents.find(d => d.Type === "IMG") : null;
+        const aadDoc = Array.isArray(e.Documents) ? e.Documents.find(d => d.Type === "AAD") : null;
+        const panDoc = Array.isArray(e.Documents) ? e.Documents.find(d => d.Type === "PAN") : null;
+        const imgUrl = e.ImageURL || e.ImageUrl || e.Image || docImg?.ImagePath || docImg?.ImageURL || res?.primaryRecord?.ImageURL || "";
+        const aadharNum = e.AadharNo || e.Aadar_Number || (aadDoc ? aadDoc.Name : "");
+        const panNum = e.CustPanNo || e.PanNo || e.Panname || (panDoc ? panDoc.Name : "");
         const itemDocs = [
           ...(Array.isArray(e.Documents) ? e.Documents : []),
           ...allResDocs
@@ -105,7 +185,10 @@ const MobileVer = () => {
           ImageURL: imgUrl,
           ImageUrl: imgUrl,
           DateOfBirth: e.DateOfBirth || e.DateOf_Birth,
-          Isaadharverified: e.Isaadharverified != null ? e.Isaadharverified : (e.AadharNo || e.Aadar_Number ? 1 : 0),
+          AadharNo: aadharNum,
+          Aadar_Number: aadharNum,
+          CustPanNo: panNum,
+          Isaadharverified: e.Isaadharverified != null ? e.Isaadharverified : (aadharNum ? 1 : 0),
           major: calculateAge(e.DateOfBirth || e.DateOf_Birth) >= 18 ? "Y" : "N",
           Documents: itemDocs,
           combinedDocuments: allResDocs,
@@ -147,7 +230,9 @@ const MobileVer = () => {
           ? data.filter(item => (item.Isaadharverified === 0 && item.CustomerType === 'V' && calculateAge(item.DateOfBirth) <= 18)) 
           : [];
           
-        const combinedVerifiedCustomers = [...verifiedCustomers, ...verified1];
+        const combinedVerifiedCustomers = Array.from(
+          new Map([...verifiedCustomers, ...verified1].map(item => [item.ID, item])).values()
+        );
 
         if (combinedVerifiedCustomers.length) {
           setSelectedCustomer(combinedVerifiedCustomers);

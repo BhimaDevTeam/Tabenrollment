@@ -128,6 +128,7 @@ function Paymentgateway({
   ekycSignature,
   setEkycSignature,
   generateEnrollmentPdfProp,
+  onRequestPreview,
 }) {
   const { currencySymbol, selectedCountry } = useSelector((state) => state.customer || {});
   const activeSymbol = currencySymbol || "₹";
@@ -711,6 +712,34 @@ function Paymentgateway({
 
             <button
               type="button"
+              className="pay-btn-secondary"
+              style={{
+                background: "#fcf8f2",
+                border: "1.5px solid #cd9a50",
+                color: "#8c5c34",
+                padding: "10px",
+                borderRadius: "8px",
+                fontSize: "14px",
+                fontWeight: "700",
+                cursor: "pointer",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "all 0.2s ease",
+              }}
+              onClick={() => {
+                if (typeof onRequestPreview === "function") {
+                  onRequestPreview(() => SaveOffline());
+                }
+              }}
+            >
+              👁️ Preview Enrollment Details
+            </button>
+
+            <button
+              type="button"
               className={`pay-btn-primary ${!(isTermsChecked && (!isEsignEnabled || hasEkycSignature || isCustomerSigned)) ? "is-disabled" : ""}`}
               onClick={() => {
                 if (!isTermsChecked) {
@@ -722,7 +751,11 @@ function Paymentgateway({
                   setShowSignPadModal(true);
                   return;
                 }
-                SaveOffline();
+                if (typeof onRequestPreview === "function") {
+                  onRequestPreview(() => SaveOffline());
+                } else {
+                  SaveOffline();
+                }
               }}
             >
               Save Offline
@@ -1171,19 +1204,27 @@ function Paymentgateway({
                             type="button"
                             disabled={isSavingAfterSign || !!userDraftid}
                             onClick={async () => {
-                              setIsSavingAfterSign(true);
-                              try {
-                                const draftId = await CallSaveDraft(paymentMethod || "offline");
-                                if (draftId) {
-                                  setuserDraftid(draftId);
-                                  toast.success("✅ Enrollment saved successfully!");
-                                } else {
-                                  toast.error("Failed to save enrollment. Please try again.");
+                              const doSave = async () => {
+                                setIsSavingAfterSign(true);
+                                try {
+                                  const draftId = await CallSaveDraft(paymentMethod || "offline");
+                                  if (draftId) {
+                                    setuserDraftid(draftId);
+                                    toast.success("✅ Enrollment saved successfully!");
+                                  } else {
+                                    toast.error("Failed to save enrollment. Please try again.");
+                                  }
+                                } catch (err) {
+                                  toast.error("Error saving enrollment.");
+                                } finally {
+                                  setIsSavingAfterSign(false);
                                 }
-                              } catch (err) {
-                                toast.error("Error saving enrollment.");
-                              } finally {
-                                setIsSavingAfterSign(false);
+                              };
+
+                              if (typeof onRequestPreview === "function") {
+                                onRequestPreview(doSave);
+                              } else {
+                                await doSave();
                               }
                             }}
                             style={{
@@ -1407,6 +1448,31 @@ function Paymentgateway({
             )}
 
             <Button
+              style={{
+                backgroundColor: "#fcf8f2",
+                color: "#8c5c34",
+                border: "1.5px solid #cd9a50",
+                width: "100%",
+                padding: "10px",
+                fontSize: "15px",
+                fontWeight: "bold",
+                marginBottom: "10px",
+                borderRadius: "6px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+              onClick={() => {
+                if (typeof onRequestPreview === "function") {
+                  onRequestPreview(() => SaveOffline());
+                }
+              }}
+            >
+              {"👁️ Preview Enrollment Details"}
+            </Button>
+
+            <Button
                 style={{
                   backgroundColor: "rgb(205, 154, 80)",
                   color: "white",
@@ -1420,7 +1486,11 @@ function Paymentgateway({
                     toast.error("Please accept the Terms and Conditions");
                     return;
                   }
-                  SaveOffline();
+                  if (typeof onRequestPreview === "function") {
+                    onRequestPreview(() => SaveOffline());
+                  } else {
+                    SaveOffline();
+                  }
                 }}
               >
                 {"Save Offline"}

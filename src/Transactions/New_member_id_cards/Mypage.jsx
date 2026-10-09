@@ -39,6 +39,7 @@ import EkycQRModal from "./EkycQRModal";
 
 import Paymentgateway from "./Paymentgateway";
 import Header from "../../header";
+import EnrollmentPreviewModal from "./EnrollmentPreviewModal";
 
 // import { ErrorSharp } from '@mui/icons-material';
 const Mypage = () => {
@@ -122,6 +123,35 @@ const Mypage = () => {
   const [noOfInstallments, setNoOfInstallments] = useState(11);
   const [ekycSignature, setEkycSignature] = useState(null); // signature captured on eKYC page
   const [permanentAddress, setPermanentAddress] = useState("");
+
+  // Full Enrollment Preview modal state
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [pendingSaveCallback, setPendingSaveCallback] = useState(null);
+
+  const handleOpenPreview = useCallback((saveCallback) => {
+    setPendingSaveCallback(() => (typeof saveCallback === "function" ? saveCallback : null));
+    setIsPreviewOpen(true);
+  }, []);
+
+  const handleConfirmSaveFromPreview = async () => {
+    setIsPreviewOpen(false);
+    if (typeof pendingSaveCallback === "function") {
+      await pendingSaveCallback();
+    } else {
+      await SaveData("offline");
+    }
+  };
+
+  const handleEditSectionFromPreview = (accordionId) => {
+    setIsPreviewOpen(false);
+    setExpanded(accordionId);
+    setTimeout(() => {
+      const el = document.getElementById(accordionId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 250);
+  };
 
   // Handle eKYC completion from QR modal - update state in-place without navigating
   const handleEkycComplete = useCallback((ekycData) => {
@@ -1515,6 +1545,34 @@ const Mypage = () => {
           >
             ENROLLMENT
           </h2>
+          <button
+            type="button"
+            onClick={() => handleOpenPreview(() => SaveData("offline"))}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              background: "rgba(255, 255, 255, 0.22)",
+              color: "#ffffff",
+              border: "1px solid rgba(255, 255, 255, 0.45)",
+              borderRadius: "20px",
+              padding: "5px 14px",
+              fontSize: "12px",
+              fontWeight: "700",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              backdropFilter: "blur(4px)",
+              marginTop: "6px",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.38)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "rgba(255, 255, 255, 0.22)";
+            }}
+          >
+            📋 Preview Application
+          </button>
         </div>
       </div>
 
@@ -1857,6 +1915,7 @@ const Mypage = () => {
               ekycSignature={ekycSignature}
               setEkycSignature={setEkycSignature}
               generateEnrollmentPdfProp={generateEnrollmentPdf}
+              onRequestPreview={handleOpenPreview}
             />
           </AccordionDetails>
         </Accordion>
@@ -2022,6 +2081,30 @@ const Mypage = () => {
           state: subscriberData.state || "",
           pincode: subscriberData.pinCode || "",
         }}
+      />
+
+      <EnrollmentPreviewModal
+        open={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        onConfirmSave={handleConfirmSaveFromPreview}
+        onEditSection={handleEditSectionFromPreview}
+        isSaving={isSaving}
+        subscriberData={subscriberData}
+        membershipData={membershipData}
+        nomineeData={nomineeData}
+        bankData={bankData}
+        guardaianData={guardaianData}
+        image={image}
+        ekycSignature={ekycSignature}
+        uploadedDocs={uploadedDocs}
+        aadharverified={aadharverified}
+        aadharNo={aadharNo}
+        branchName={branchName}
+        branchCode={getCleanBranch(branch || membershipData.branch)}
+        currencySymbol={activeSymbol}
+        selectedCountry={selectedCountry}
+        paymentMode={paymentmode || "offline"}
+        noOfInstallments={noOfInstallments}
       />
 
       <ToastContainer />

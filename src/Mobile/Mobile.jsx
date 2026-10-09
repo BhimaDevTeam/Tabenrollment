@@ -164,46 +164,82 @@ const Mobile = () => {
     const primaryUrl = isSg
       ? `${SG_SCHEME_API}?branch=${encodeURIComponent(targetBranch)}`
       : `${apiBase}/schemes?branch=${encodeURIComponent(targetBranch)}&country=${encodeURIComponent(country)}`;
-    try {
-      const response = await fetch(primaryUrl, {
-        method: "GET",
-        headers: {
-          "Key": "WEYA5TXDZCEEZFG9CLATH37HFV84AMH6794CVYGVY8WXS52",
-          "Content-Type": "application/json",
-          "country": country,
-          "country-code": isSg ? "sg" : "in",
-          "Cache-Control": "no-cache",
-          "Pragma": "no-cache",
-        },
-        cache: "no-store",
-      });
+    const fallbackUrl = `${apiBase}/schemes?branch=${encodeURIComponent(targetBranch)}&country=${encodeURIComponent(country)}`;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    try {
+      let data = null;
+      try {
+        const response = await fetch(primaryUrl, {
+          method: "GET",
+          headers: {
+            "Key": "WEYA5TXDZCEEZFG9CLATH37HFV84AMH6794CVYGVY8WXS52",
+            "Content-Type": "application/json",
+            "country": country,
+            "country-code": isSg ? "sg" : "in",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+          },
+          cache: "no-store",
+        });
+
+        if (response.ok) {
+          const resData = await response.json();
+          data = Array.isArray(resData) ? resData : (resData?.data || resData?.schemes || []);
+        }
+      } catch (err) {
+        console.warn("Primary scheme fetch failed, trying fallback:", err);
       }
 
-      const resData = await response.json();
-      const data = Array.isArray(resData) ? resData : (resData?.data || resData?.schemes || []);
-      if (Array.isArray(data)) {
-        const filtered = data.filter(s => {
-          if (s.isClosed && String(s.isClosed).toUpperCase() === 'Y') return false;
+      // If primary failed or returned empty data for Singapore, try fallback from DraftEnrollmentApi
+      if ((!data || !Array.isArray(data) || data.length === 0) && isSg) {
+        try {
+          const fbResponse = await fetch(fallbackUrl, {
+            headers: {
+              "country": country,
+              "country-code": "sg",
+            },
+          });
+          if (fbResponse.ok) {
+            const fbData = await fbResponse.json();
+            data = Array.isArray(fbData) ? fbData : (fbData?.data || fbData?.schemes || []);
+          }
+        } catch (fbErr) {
+          console.warn("Fallback scheme fetch failed:", fbErr);
+        }
+      }
+
+      if (Array.isArray(data) && data.length > 0) {
+        const filtered = data.filter((s) => {
+          if (s.isClosed && String(s.isClosed).toUpperCase() === "Y") return false;
           const isTabEn = s.isTabEnScheme ?? s.IsTabEnScheme ?? s.isTabEn ?? s.IsTabEn;
           const isEnabled =
+            isTabEn == null ||
             isTabEn === true ||
             Number(isTabEn) === 1 ||
-            String(isTabEn).toLowerCase() === 'true' ||
-            String(isTabEn).toUpperCase() === 'Y' ||
-            String(isTabEn) === '1';
+            String(isTabEn).toLowerCase() === "true" ||
+            String(isTabEn).toUpperCase() === "Y" ||
+            String(isTabEn) === "1";
           return isEnabled;
         });
 
         const mapped = mapApiSchemesToCards(filtered, isSg);
-        setActiveSchemes(mapped);
-        const shreyas = mapped.find(isShreyasScheme);
-        setViewingScheme(shreyas || mapped[0] || null);
+        if (mapped.length > 0) {
+          setActiveSchemes(mapped);
+          const shreyas = mapped.find(isShreyasScheme);
+          setViewingScheme(shreyas || mapped[0] || null);
+          return;
+        }
       }
+
+      // If no schemes could be loaded from API, keep/fallback to default schemesData
+      const defaultMapped = isSg ? mapApiSchemesToCards(schemesData, true) : schemesData;
+      setActiveSchemes(defaultMapped);
+      setViewingScheme(defaultMapped[0] || null);
     } catch (error) {
       console.error("Error fetching branch schemes:", error);
+      const defaultMapped = isSg ? mapApiSchemesToCards(schemesData, true) : schemesData;
+      setActiveSchemes(defaultMapped);
+      setViewingScheme(defaultMapped[0] || null);
     }
   };
 
