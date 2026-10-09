@@ -131,8 +131,10 @@ function Paymentgateway({
   onRequestPreview,
 }) {
   const { currencySymbol, selectedCountry } = useSelector((state) => state.customer || {});
-  const activeSymbol = currencySymbol || "₹";
-  const isSingapore = selectedCountry === "Singapore";
+  // Singapore concept commented out - India live only
+  // const isSingapore = selectedCountry === "Singapore";
+  const isSingapore = false;
+  const activeSymbol = "₹";
   const isEsignEnabled = (localStorage.getItem("EnableEsign") || window.APP_CONFIG?.EnableEsign || "0") === "1";
 
   const [paymentLink, setPaymentLink] = useState(null);

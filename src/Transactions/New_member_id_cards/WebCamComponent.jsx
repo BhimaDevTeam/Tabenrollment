@@ -157,22 +157,20 @@ const CameraComponent = ({ getImageUrl, capturedImage, aadharVerified }) => {
           <img src={imageBase64} alt="Captured"
             style={{ width: "100%", maxWidth: "400px", borderRadius: "8px", marginTop: "20px" }}
           />
-          {!aadharVerified && (
-            <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
-              <Button
-                onClick={handleCameraOpen}
-                style={{
-                  background: "linear-gradient(103.45deg, #614119 -11.68%, #CD9A50 48.54%, #614119 108.76%)",
-                  color: "white", display: "flex", alignItems: "center", gap: "8px"
-                }}
-                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-              >
-                <RefreshCw className="w-6 h-6" />
-                Retake Photo
-              </Button>
-            </div>
-          )}
+          <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
+            <Button
+              onClick={handleCameraOpen}
+              style={{
+                background: "linear-gradient(103.45deg, #614119 -11.68%, #CD9A50 48.54%, #614119 108.76%)",
+                color: "white", display: "flex", alignItems: "center", gap: "8px"
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            >
+              <RefreshCw className="w-6 h-6" />
+              Retake Photo
+            </Button>
+          </div>
         </div>
       )}
 

@@ -14,8 +14,9 @@ const SINGAPORE_BRANCHES = Object.keys(SINGAPORE_BRANCH_MAP);
 
 const Membershipdetails = ({ setMembershipData, branch ,errorValidate, clearError, membershipData, validateMembership ,isdraftid_gen, preSelectedScheme}) => {
   const { currencySymbol, selectedCountry } = useSelector((state) => state.customer || {});
-  const activeSymbol = currencySymbol || "₹";
-  const isSingapore = selectedCountry === "Singapore";
+  // Singapore concept commented out - India live only
+  const activeSymbol = "₹";
+  const isSingapore = false;
 
   const [schemeData, setSchemeData] = useState([]);
   const [branchData, setBranchData] = useState([]);

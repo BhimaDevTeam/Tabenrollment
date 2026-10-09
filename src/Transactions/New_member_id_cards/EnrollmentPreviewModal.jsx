@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./EnrollmentPreviewModal.css";
 import { formatCurrency } from "../../utlis/currencyUtils";
 import { calculateAge } from "../PickDate/DateUtils";
@@ -26,10 +26,14 @@ const EnrollmentPreviewModal = ({
   paymentMode = "offline",
   noOfInstallments = 11,
 }) => {
+  const [imgError, setImgError] = useState(false);
+
   if (!open) return null;
 
-  const isSingapore = selectedCountry === "Singapore";
-  const activeCurrency = currencySymbol || (isSingapore ? "S$" : "₹");
+  // ── Singapore concept commented out - India live only ──────────────────
+  // const isSingapore = selectedCountry === "Singapore";
+  const isSingapore = false;
+  const activeCurrency = "₹";
 
   // Format Subscriber address
   const fullAddress = [
@@ -57,19 +61,26 @@ const EnrollmentPreviewModal = ({
       ? "Silver"
       : membershipData.commodityTypeId || "Gold";
 
-  // Installment amount
+  // Installment amount & Total Payable in India (exact amount without GST markup)
   const installmentAmt = Number(membershipData.installmentAmount) || 0;
+  const totalPayable = installmentAmt;
 
-  // Calculate SG GST if applicable
-  const gstRate = Number(membershipData?.gstValue) > 0 ? Number(membershipData?.gstValue) : 9;
-  const isGSTInclusive =
-    membershipData?.isGSTInclusive === undefined || membershipData?.isGSTInclusive === null
-      ? true
-      : Number(membershipData?.isGSTInclusive) === 1 || membershipData?.isGSTInclusive === true;
+  // Resolve Photo URL
+  const resolvePhotoUrl = (raw) => {
+    if (!raw || typeof raw !== "string") return "";
+    if (
+      raw.startsWith("data:image") ||
+      raw.startsWith("http://") ||
+      raw.startsWith("https://") ||
+      raw.startsWith("blob:")
+    ) {
+      return raw;
+    }
+    const clean = raw.replace(/^\/+/, "");
+    return `https://vrudhi.bhima.info/DraftEnrollmentApi/${clean}`;
+  };
 
-  const totalPayable = isGSTInclusive
-    ? installmentAmt
-    : installmentAmt + (installmentAmt * gstRate) / 100;
+  const photoUrl = resolvePhotoUrl(image);
 
   // Has guardian info
   const hasGuardian =
@@ -81,7 +92,6 @@ const EnrollmentPreviewModal = ({
 
   // Has bank info
   const hasBank =
-    !isSingapore &&
     bankData &&
     (bankData.accountNo || bankData.ifscCode || bankData.bankName);
 
@@ -115,8 +125,13 @@ const EnrollmentPreviewModal = ({
           <div className="epm-hero-card">
             <div className="epm-hero-user">
               <div className="epm-hero-avatar-box">
-                {image ? (
-                  <img src={image} alt="Subscriber" className="epm-hero-avatar-img" />
+                {photoUrl && !imgError ? (
+                  <img
+                    src={photoUrl}
+                    alt="Subscriber"
+                    className="epm-hero-avatar-img"
+                    onError={() => setImgError(true)}
+                  />
                 ) : (
                   <span className="epm-hero-avatar-fallback">👤</span>
                 )}
@@ -197,9 +212,7 @@ const EnrollmentPreviewModal = ({
                 </span>
               </div>
               <div className="epm-field">
-                <span className="epm-label">
-                  {isSingapore ? "NRIC / FIN / ID" : "Aadhaar Number"}
-                </span>
+                <span className="epm-label">Aadhaar Number</span>
                 <span className="epm-val">
                   {aadharNo || "-"}
                   {aadharverified === 1 ? (
@@ -305,14 +318,6 @@ const EnrollmentPreviewModal = ({
                   {branchName || branchCode || membershipData.branch || "-"}
                 </span>
               </div>
-              {isSingapore && (
-                <div className="epm-field">
-                  <span className="epm-label">GST Status</span>
-                  <span className="epm-val">
-                    {isGSTInclusive ? "Inclusive (9% GST)" : `Exclusive (+9% GST)`}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -425,33 +430,60 @@ const EnrollmentPreviewModal = ({
             )}
           </div>
 
-          {/* 7. Photo & Signature */}
+          {/* 7. Subscriber Photo (Signature commented out as requested) */}
           <div className="epm-section-card">
             <div className="epm-section-head">
               <div className="epm-section-title-wrap">
                 <span className="epm-section-icon">📷</span>
-                <h5 className="epm-section-title">Photo & Signature</h5>
+                <h5 className="epm-section-title">Subscriber Photo</h5>
               </div>
               <button
                 type="button"
                 className="epm-edit-btn"
-                onClick={() =>
-                  onEditSection(image ? "camera-header" : "payment-header")
-                }
-                title="Edit Photo or Signature"
+                onClick={() => onEditSection("camera-header")}
+                title="Retake or change photo"
               >
-                ✏️ Edit
+                📸 Retake Photo
               </button>
             </div>
-            <div className="epm-media-grid">
-              <div className="epm-media-box">
-                <span className="epm-media-title">Subscriber Photo</span>
-                {image ? (
-                  <img src={image} alt="Customer Photo" className="epm-media-preview-img" />
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <div className="epm-media-box" style={{ width: "100%", maxWidth: "340px" }}>
+                <span className="epm-media-title">SUBSCRIBER PHOTO</span>
+                {photoUrl && !imgError ? (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                    <img
+                      src={photoUrl}
+                      alt="Customer Photo"
+                      className="epm-media-preview-img"
+                      onError={() => setImgError(true)}
+                    />
+                    <button
+                      type="button"
+                      className="epm-edit-btn"
+                      onClick={() => onEditSection("camera-header")}
+                      style={{ marginTop: "4px" }}
+                    >
+                      📸 Retake Photo
+                    </button>
+                  </div>
                 ) : (
-                  <span className="epm-media-empty">Photo not captured</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", padding: "12px" }}>
+                    <span style={{ fontSize: "36px" }}>👤</span>
+                    <span className="epm-media-empty">Photo not captured or preview unavailable</span>
+                    <button
+                      type="button"
+                      className="epm-edit-btn"
+                      onClick={() => onEditSection("camera-header")}
+                      style={{ marginTop: "4px" }}
+                    >
+                      📸 Take / Retake Photo
+                    </button>
+                  </div>
                 )}
               </div>
+
+              {/* Customer signature commented out as requested */}
+              {/*
               <div className="epm-media-box">
                 <span className="epm-media-title">Customer Signature</span>
                 {ekycSignature ? (
@@ -464,6 +496,7 @@ const EnrollmentPreviewModal = ({
                   <span className="epm-media-empty">Signature not provided</span>
                 )}
               </div>
+              */}
             </div>
           </div>
 
@@ -497,7 +530,7 @@ const EnrollmentPreviewModal = ({
               </div>
               <div className="epm-field">
                 <span className="epm-label">Total Payable Amount</span>
-                <span className="epm-val epm-val-highlight" style={{ fontSize: "1.1rem" }}>
+                <span className="epm-val epm-val-highlight" style={{ fontSize: "1.15rem", color: "#614119" }}>
                   {formatCurrency(totalPayable, activeCurrency)}
                 </span>
               </div>

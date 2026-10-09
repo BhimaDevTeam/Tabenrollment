@@ -44,7 +44,8 @@ import EnrollmentPreviewModal from "./EnrollmentPreviewModal";
 // import { ErrorSharp } from '@mui/icons-material';
 const Mypage = () => {
   const { selectedCustomerID, selectedCountry, currencySymbol } = useSelector((state) => state.customer || {});
-  const activeSymbol = currencySymbol || (selectedCountry === "Singapore" ? "S$" : "₹");
+  // Singapore concept commented out - India live only
+  const activeSymbol = "₹";
   console.log("selectedCustomerID",selectedCustomerID)
 
   const location = useLocation();
@@ -1536,8 +1537,8 @@ const Mypage = () => {
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
             }}
           >
-            <span>{selectedCountry === "Singapore" ? "🇸🇬" : "🇮🇳"}</span>
-            <span>{selectedCountry === "Singapore" ? "Singapore (S$ - SGD)" : "India (₹ - INR)"}</span>
+            <span>🇮🇳</span>
+            <span>India (₹ - INR)</span>
           </div>
           <h2
             className="text-black"
