@@ -8,7 +8,7 @@ import { parseJSON } from "date-fns";
 import { setCustomer, setSelectedCustomerID, setIsOtherCustomer } from "../redux/customer/customerSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { calculateAge } from "../utlis/calculateAge";
-import { Mobileverification, LegacyMobileverification } from "../apiurl";
+import { Mobileverification, LegacyMobileverification, CRM_CUSTOMER_FALLBACK_API } from "../apiurl";
 
 const MobileVer = () => {
   const { customer, selectedCountry } = useSelector(state => state.customer || {});
@@ -128,6 +128,21 @@ const MobileVer = () => {
             }
           } catch (fbErr) {
             console.warn("Fallback collection API error:", fbErr);
+          }
+        }
+
+        // Secondary fallback to suvarnagopura CRM API
+        if (!res) {
+          try {
+            const crmFbResponse = await fetch(`${CRM_CUSTOMER_FALLBACK_API}/${phoneNo}`);
+            if (crmFbResponse.ok) {
+              const crmFbData = await crmFbResponse.json();
+              if (Array.isArray(crmFbData) && crmFbData.length > 0) {
+                res = crmFbData;
+              }
+            }
+          } catch (crmFbErr) {
+            console.warn("Secondary CRM fallback error:", crmFbErr);
           }
         }
       }
