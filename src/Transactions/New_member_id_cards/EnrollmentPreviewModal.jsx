@@ -165,7 +165,27 @@ const EnrollmentPreviewModal = ({
     return `https://vrudhi.bhima.info/DraftEnrollmentApi/${clean}`;
   };
 
-  const photoUrl = resolvePhotoUrl(image);
+  // Profile photo resolution (fallback to doc with Type 'IMG' / 30 if image prop is not provided)
+  const profileDoc = (uploadedDocs || []).find(
+    (doc) =>
+      doc &&
+      (doc.Type === "IMG" ||
+        String(doc.documentTypeId) === "30" ||
+        String(doc.DocumentTypeID) === "30")
+  );
+  const effectiveImage = image || profileDoc?.ImagePath || profileDoc?.ImageURL || "";
+  const photoUrl = resolvePhotoUrl(effectiveImage);
+
+  // Filter out Profile Image (IMG / type 30) from KYC Documents list so only real KYC docs display
+  const kycDocs = (uploadedDocs || []).filter(
+    (doc) =>
+      doc &&
+      doc.Type !== "IMG" &&
+      String(doc.documentTypeId) !== "30" &&
+      String(doc.DocumentTypeID) !== "30" &&
+      !doc.Type?.startsWith?.("NEF") &&
+      !doc.Type?.startsWith?.("SOD")
+  );
 
   // Has guardian info
   const hasGuardian =
@@ -517,7 +537,7 @@ const EnrollmentPreviewModal = ({
                 <span className="epm-section-icon">📄</span>
                 <h5 className="epm-section-title">KYC Documents</h5>
                 <span className="epm-badge epm-badge-gold">
-                  {uploadedDocs?.length || 0} Document(s)
+                  {kycDocs.length} Document(s)
                 </span>
               </div>
               <button
@@ -529,9 +549,9 @@ const EnrollmentPreviewModal = ({
                 ✏️ Edit
               </button>
             </div>
-            {uploadedDocs && uploadedDocs.length > 0 ? (
+            {kycDocs.length > 0 ? (
               <div className="epm-docs-list">
-                {uploadedDocs.map((doc, idx) => (
+                {kycDocs.map((doc, idx) => (
                   <div key={idx} className="epm-doc-chip">
                     <span className="epm-doc-chip-icon">📎</span>
                     <span>
@@ -542,7 +562,7 @@ const EnrollmentPreviewModal = ({
                 ))}
               </div>
             ) : (
-              <div className="epm-media-empty">No documents uploaded yet</div>
+              <div className="epm-media-empty">No KYC documents uploaded yet</div>
             )}
           </div>
 
