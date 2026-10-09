@@ -1677,25 +1677,6 @@ const Mypage = () => {
         </div>
 
         <div className="flex-1 text-center" style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "linear-gradient(135deg, #4a2810, #7a4b27)",
-              color: "#fcde7e",
-              border: "1px solid #d4af37",
-              borderRadius: "20px",
-              padding: "4px 14px",
-              fontSize: "13px",
-              fontWeight: "700",
-              marginBottom: "4px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-            }}
-          >
-            <span>🇮🇳</span>
-            <span>India (₹ - INR)</span>
-          </div>
           <h2
             className="text-black"
             style={{ fontFamily: "Quiche Sans", fontWeight: "normal", color: "white", margin: 0 }}

@@ -175,34 +175,16 @@ const Header = ({ branch }) => {
             </span>
           </div>
 
-          <div className="app-country-chip">
-            {isLocked ? (
-              <span className="app-country-active" title={currentCountry === "Singapore" ? "Singapore" : "India"}>
-                <span>{currentCountry === "Singapore" ? "🇸🇬" : "🇮🇳"}</span>
-                <span className="app-country-name app-country-short">{currentCountry === "Singapore" ? "SG" : "IN"}</span>
-                <span className="app-country-name app-country-full">{currentCountry === "Singapore" ? "Singapore" : "India"}</span>
+          {/* Country code chip removed for India live build */}
+          {currentCountry === "Singapore" && (
+            <div className="app-country-chip">
+              <span className="app-country-active" title="Singapore">
+                <span>🇸🇬</span>
+                <span className="app-country-name app-country-short">SG</span>
+                <span className="app-country-name app-country-full">Singapore</span>
               </span>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className={`app-country-btn${currentCountry === "India" ? " is-active" : ""}`}
-                  onClick={() => handleCountrySelect("India")}
-                >
-                  <span className="app-country-short">🇮🇳 IN</span>
-                  <span className="app-country-full">🇮🇳 India</span>
-                </button>
-                <button
-                  type="button"
-                  className={`app-country-btn${currentCountry === "Singapore" ? " is-active" : ""}`}
-                  onClick={() => handleCountrySelect("Singapore")}
-                >
-                  <span className="app-country-short">🇸🇬 SG</span>
-                  <span className="app-country-full">🇸🇬 Singapore</span>
-                </button>
-              </>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
