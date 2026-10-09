@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import axios from "axios";
 import {
   Container,
@@ -128,13 +128,27 @@ const Mypage = () => {
   // Full Enrollment Preview modal state
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [pendingSaveCallback, setPendingSaveCallback] = useState(null);
+  const validateBeforePreviewOrSaveRef = useRef(null);
 
   const handleOpenPreview = useCallback((saveCallback) => {
+    if (typeof validateBeforePreviewOrSaveRef.current === "function") {
+      const isValid = validateBeforePreviewOrSaveRef.current();
+      if (!isValid) {
+        return;
+      }
+    }
     setPendingSaveCallback(() => (typeof saveCallback === "function" ? saveCallback : null));
     setIsPreviewOpen(true);
   }, []);
 
   const handleConfirmSaveFromPreview = async () => {
+    if (typeof validateBeforePreviewOrSaveRef.current === "function") {
+      const isValid = validateBeforePreviewOrSaveRef.current();
+      if (!isValid) {
+        setIsPreviewOpen(false);
+        return;
+      }
+    }
     setIsPreviewOpen(false);
     if (typeof pendingSaveCallback === "function") {
       await pendingSaveCallback();
@@ -423,35 +437,40 @@ const Mypage = () => {
   const validateSubscriber = () => {
     function CustomerValidation() {
       const errors = {};
-      if (!subscriberData.subscriberName) {
+      if (!subscriberData.subscriberName || !subscriberData.subscriberName.trim()) {
         errors.subscriberName = "Subscriber name is required";
       }
       if (!subscriberData.gender) {
         errors.gender = "Gender is required.";
       }
       if (!subscriberData.dob) {
-        errors.dob = "dob is required.";
+        errors.dob = "Date of Birth is required.";
       }
-      if (!subscriberData.email) {
+      if (!subscriberData.mobileNo) {
+        errors.mobileNo = "Mobile number is required.";
+      } else if (!/^\d{10}$/.test(String(subscriberData.mobileNo).trim())) {
+        errors.mobileNo = "Valid 10-digit mobile number is required.";
+      }
+      if (!subscriberData.email || !subscriberData.email.trim()) {
         errors.email = "Email ID is required.";
       } else if (!/\S+@\S+\.\S+/.test(subscriberData.email)) {
         errors.email = "Email is invalid.";
       }
-      if (!subscriberData.address1.trim() && aadharverified !== 1) {
+      if (!subscriberData.address1?.trim() && aadharverified !== 1) {
         errors.address1 = "Address is required.";
       }
       const isSingapore = selectedCountry === "Singapore";
-      if (!/^\d{6}$/.test(subscriberData.pinCode)) {
+      if (!/^\d{6}$/.test(String(subscriberData.pinCode || "").trim())) {
         errors.pinCode = isSingapore ? "PO Code is required (6 digits)" : "Pin code is required";
       }
       if (!subscriberData.state?.length && !isSingapore) {
         errors.state = "State is required!";
       }
       if (!subscriberData.city?.length && !isSingapore) {
-        errors.city = "city is required!";
+        errors.city = "City is required!";
       }
       if (!subscriberData.area?.length && !isSingapore) {
-        errors.area = "area is required!";
+        errors.area = "Area is required!";
       }
 
       seterrorValidate(errors);
@@ -490,12 +509,14 @@ const Mypage = () => {
     else if (selectedId == "minor" || selectedId == "new") {
       return CustomerValidation();
     }
+    return CustomerValidation();
   };
 
-  const validateMembership = () => {
+  const validateMembership = (customData) => {
+    const data = customData || membershipData;
     const errors = {};
-    const { installmentAmount, minInsValue, insMultiples } = membershipData;
-    if (!membershipData.selectedSchemeCode) {
+    const { installmentAmount, minInsValue, insMultiples, selectedSchemeCode } = data;
+    if (!selectedSchemeCode) {
       errors.selectedSchemeCode = "Scheme is required";
     } else {
       if (!installmentAmount) {
@@ -506,14 +527,14 @@ const Mypage = () => {
         const minAmount = parseInt(minInsValue, 10);
         const multiple = parseInt(insMultiples, 10);
 
-        if (isNaN(amountInt)) {
-          errors.installmentAmount = "Installment amount must be an integer";
+        if (isNaN(amountInt) || amountInt <= 0) {
+          errors.installmentAmount = "Installment amount must be a positive integer";
         }
-        if (amountInt != null && amountInt < minAmount) {
-          errors.installmentAmount = `Installment amount must be at least ${minAmount}`;
+        if (!isNaN(minAmount) && amountInt != null && amountInt < minAmount) {
+          errors.installmentAmount = `Installment amount must be at least ₹${minAmount.toLocaleString("en-IN")}`;
         }
-        if (amountInt != null && amountInt % multiple !== 0) {
-          errors.installmentAmount = `Installment amount must be a multiple of ${multiple}`;
+        if (!isNaN(multiple) && multiple > 0 && amountInt != null && amountInt % multiple !== 0) {
+          errors.installmentAmount = `Installment amount must be a multiple of ₹${multiple.toLocaleString("en-IN")}`;
         }
       }
     }
@@ -523,11 +544,11 @@ const Mypage = () => {
   // Membership Details Validation
   const validateNominee = () => {
     const errors = {};
-    if (!nomineeData.nomineename)
+    if (!nomineeData.nomineename || !nomineeData.nomineename.trim())
       errors.nomineename = "Nominee name is required";
-    if (!nomineeData.relationship)
+    if (!nomineeData.relationship && !nomineeData.relationshipName)
       errors.relationship = "Nominee relationship is required";
-    if (!nomineeData.nomineeaddress)
+    if (!nomineeData.nomineeaddress || !nomineeData.nomineeaddress.trim())
       errors.nomineeaddress = "Nominee Address is required";
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -536,9 +557,9 @@ const Mypage = () => {
     const isSg = cleanBranch === "LI" || cleanBranch === "LN" || (selectedCountry === "Singapore" && cleanBranch !== "KRM");
     if (!nomineeData.nomineephoneno) {
       errors.nomineephoneno = "Nominee Phone No is required";
-    } else if (isSg && !/^\d{8}$/.test(nomineeData.nomineephoneno)) {
+    } else if (isSg && !/^\d{8}$/.test(String(nomineeData.nomineephoneno).trim())) {
       errors.nomineephoneno = "Nominee phone must be 8 digits";
-    } else if (!isSg && !/^\d{10}$/.test(nomineeData.nomineephoneno)) {
+    } else if (!isSg && !/^\d{10}$/.test(String(nomineeData.nomineephoneno).trim())) {
       errors.nomineephoneno = "Nominee phone must be 10 digits";
     }
     seterrorValidate(errors);
@@ -617,6 +638,131 @@ const Mypage = () => {
       return acc;
     }, {});
   };
+  const validateBeforePreviewOrSave = useCallback(() => {
+    const isSingapore = selectedCountry === "Singapore";
+
+    // 1. Validate Subscriber details
+    const subErrors = validateSubscriber() || {};
+    if (Object.keys(subErrors).length > 0) {
+      const firstMsg = Object.values(subErrors)[0];
+      toast.error(`Subscriber Details: ${firstMsg}`);
+      setExpanded("subscriber-header");
+      seterrorValidate(subErrors);
+      setTimeout(() => {
+        document.getElementById("subscriber-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
+      return false;
+    }
+
+    // 2. Validate Scheme Details
+    const memErrors = validateMembership() || {};
+    if (Object.keys(memErrors).length > 0) {
+      const firstMsg = Object.values(memErrors)[0];
+      toast.error(`Scheme Details: ${firstMsg}`);
+      setExpanded("membership-header");
+      seterrorValidate(memErrors);
+      setTimeout(() => {
+        document.getElementById("membership-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
+      return false;
+    }
+
+    // 3. Validate Nominee Details
+    const nomErrors = validateNominee() || {};
+    if (Object.keys(nomErrors).length > 0) {
+      const firstMsg = Object.values(nomErrors)[0];
+      toast.error(`Nominee Details: ${firstMsg}`);
+      setExpanded("nominee-header");
+      seterrorValidate(nomErrors);
+      setTimeout(() => {
+        document.getElementById("nominee-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
+      return false;
+    }
+
+    // 4. Validate Guardian Details if minor
+    const age = subscriberData.dob ? calculateAge(subscriberData.dob) : null;
+    const isMinor = (age !== null && age < 18) || selectedId === "minor" || showGuardianDetails;
+    if (isMinor) {
+      const guardErrors = validateGuardian() || {};
+      if (Object.keys(guardErrors).length > 0) {
+        const firstMsg = Object.values(guardErrors)[0];
+        toast.error(`Guardian Details: ${firstMsg}`);
+        setExpanded("guardian-header");
+        seterrorValidate(guardErrors);
+        setTimeout(() => {
+          document.getElementById("guardian-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 200);
+        return false;
+      }
+    }
+
+    // 5. Validate Bank Details (if entered)
+    if (!isSingapore) {
+      const bankErrors = validateBank() || {};
+      if (Object.keys(bankErrors).length > 0) {
+        const firstMsg = Object.values(bankErrors)[0];
+        toast.error(`Bank Details: ${firstMsg}`);
+        setExpanded("bank-header");
+        seterrorValidate(bankErrors);
+        setTimeout(() => {
+          document.getElementById("bank-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 200);
+        return false;
+      }
+    }
+
+    // 6. Validate Subscriber Photo (mandatory)
+    const profileDoc = (uploadedDocs || []).find(
+      (d) => d && (d.Type === "IMG" || Number(d.documentTypeId) === 30 || Number(d.DocumentTypeID) === 30)
+    );
+    const hasPhoto = Boolean(image || profileDoc?.ImagePath || profileDoc?.ImageURL);
+    if (!hasPhoto) {
+      toast.error("Subscriber Photo is mandatory. Please capture photo before preview or save.");
+      setExpanded("camera-header");
+      setTimeout(() => {
+        document.getElementById("camera-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
+      return false;
+    }
+
+    // 7. Validate PAN for installment amount >= 1,43,000
+    const insAmt = Number(membershipData.installmentAmount || 0);
+    const PAN_THRESHOLD = 143000;
+    const hasPan =
+      (uploadedDocs || []).some((d) => d.Type === "PAN" || d.Type === "NRIC") ||
+      (alldocs || []).some((d) => d.documentTypeId === 25);
+    if (!isSingapore && insAmt >= PAN_THRESHOLD && !hasPan) {
+      toast.error(
+        `For installment amount ₹${insAmt.toLocaleString("en-IN")}, PAN Card is mandatory. Please upload PAN Card.`
+      );
+      setExpanded("uploaddoc-header");
+      setTimeout(() => {
+        document.getElementById("uploaddoc-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
+      return false;
+    }
+
+    return true;
+  }, [
+    subscriberData,
+    membershipData,
+    nomineeData,
+    guardaianData,
+    bankData,
+    showGuardianDetails,
+    selectedId,
+    selectedCountry,
+    image,
+    uploadedDocs,
+    alldocs,
+    aadharverified,
+  ]);
+
+  useEffect(() => {
+    validateBeforePreviewOrSaveRef.current = validateBeforePreviewOrSave;
+  }, [validateBeforePreviewOrSave]);
+
   const getImageUrl = (url) => {
     setImage(url);
   };
@@ -1408,6 +1554,11 @@ const Mypage = () => {
     const activeMode = overrideMode || paymentmode;
     console.log("SaveData called with activeMode:", activeMode);
 
+    if (typeof validateBeforePreviewOrSaveRef.current === "function") {
+      const isValid = validateBeforePreviewOrSaveRef.current();
+      if (!isValid) return false;
+    }
+
     if (activeMode === "online") {
       // For online payment, create new draft
       const handle = await saveDraft(activeMode);
@@ -1551,34 +1702,6 @@ const Mypage = () => {
           >
             ENROLLMENT
           </h2>
-          <button
-            type="button"
-            onClick={() => handleOpenPreview(() => SaveData("offline"))}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              background: "rgba(255, 255, 255, 0.22)",
-              color: "#ffffff",
-              border: "1px solid rgba(255, 255, 255, 0.45)",
-              borderRadius: "20px",
-              padding: "5px 14px",
-              fontSize: "12px",
-              fontWeight: "700",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              backdropFilter: "blur(4px)",
-              marginTop: "6px",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.background = "rgba(255, 255, 255, 0.38)";
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.background = "rgba(255, 255, 255, 0.22)";
-            }}
-          >
-            📋 Preview Application
-          </button>
         </div>
       </div>
 
