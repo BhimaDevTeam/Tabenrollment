@@ -203,9 +203,68 @@ const Membershipdetails = ({ setMembershipData, branch ,errorValidate, clearErro
     }
     };
 
+  // Automatically recalculate weights whenever scheme, amount, or rates update
   useEffect(() => {
-    setMembershipData(formData);
-  }, [formData, setMembershipData]);
+    if (formData.schemeType === 'W' && formData.installmentAmount) {
+      const amountInt = parseInt(Number(formData.installmentAmount), 10);
+      if (!isNaN(amountInt) && amountInt > 0) {
+        const weights = {};
+        const rateMap = SCHEME_COMMODITY_RATE_MAP[formData.commodityTypeId];
+        let amountForWeight = amountInt;
+        if (isSingapore) {
+          const gstRate = Number(formData.gstValue) > 0 ? Number(formData.gstValue) : 9;
+          const isInclusive = formData.isGSTInclusive === undefined || formData.isGSTInclusive === null
+            ? true
+            : (Number(formData.isGSTInclusive) === 1 || formData.isGSTInclusive === true);
+
+          if (isInclusive) {
+            const gstAmt = (amountInt * gstRate) / (100 + gstRate);
+            amountForWeight = amountInt - gstAmt;
+          } else {
+            amountForWeight = amountInt;
+          }
+        }
+
+        if (rateMap) {
+          const primaryRate = commodityRates[rateMap.primary];
+          if (primaryRate) {
+            weights.gold = (amountForWeight / primaryRate).toFixed(3);
+          }
+
+          if (rateMap.secondary) {
+            const secondaryRate = commodityRates[rateMap.secondary];
+            if (secondaryRate) {
+              weights.silverCoin = (amountForWeight / secondaryRate).toFixed(3);
+            }
+          }
+        }
+        setCalculatedWeight(weights);
+        return;
+      }
+    }
+    if (formData.schemeType !== 'W') {
+      setCalculatedWeight({});
+    }
+  }, [formData.schemeType, formData.installmentAmount, formData.commodityTypeId, formData.gstValue, formData.isGSTInclusive, commodityRates, isSingapore]);
+
+  useEffect(() => {
+    const updatedMembership = {
+      ...formData,
+      calculatedWeight,
+      commodityRates,
+      goldWeight: calculatedWeight?.gold ? `${calculatedWeight.gold} gms` : '',
+      silverWeight: calculatedWeight?.silverCoin ? `${calculatedWeight.silverCoin} gms` : '',
+    };
+    setMembershipData(updatedMembership);
+
+    if (calculatedWeight && (calculatedWeight.gold || calculatedWeight.silverCoin)) {
+      try {
+        localStorage.setItem("calculatedWeight", JSON.stringify(calculatedWeight));
+      } catch (err) {
+        console.error("Error saving calculated weight to localStorage:", err);
+      }
+    }
+  }, [formData, calculatedWeight, commodityRates, setMembershipData]);
 
    const handleSchemeChange = (e) => {
     const schemeCode = e.target.value;

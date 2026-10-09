@@ -53,17 +53,102 @@ const EnrollmentPreviewModal = ({
   // Age calculation
   const customerAge = subscriberData.dob ? calculateAge(subscriberData.dob) : null;
 
-  // Commodity / metal display
-  const metalType =
-    membershipData.commodityTypeId === 1 || String(membershipData.commodityTypeId) === "1"
-      ? "Gold"
-      : membershipData.commodityTypeId === 2 || String(membershipData.commodityTypeId) === "2"
-      ? "Silver"
-      : membershipData.commodityTypeId || "Gold";
+  // Format Date of Birth as DD/Mon/YYYY (e.g. 10/Oct/2000)
+  const formatDob = (dobStr) => {
+    if (!dobStr) return "-";
+    try {
+      if (typeof dobStr === "string") {
+        const matchIso = dobStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (matchIso) {
+          const [, year, monthNum, day] = matchIso;
+          const months = [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+          ];
+          const mIdx = parseInt(monthNum, 10) - 1;
+          const monthName = months[mIdx] || monthNum;
+          return `${day}/${monthName}/${year}`;
+        }
+        const matchDmY = dobStr.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+        if (matchDmY) {
+          const [, day, monthNum, year] = matchDmY;
+          const months = [
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+          ];
+          const mIdx = parseInt(monthNum, 10) - 1;
+          const monthName = months[mIdx] || monthNum;
+          return `${String(day).padStart(2, "0")}/${monthName}/${year}`;
+        }
+      }
+      const d = new Date(dobStr);
+      if (isNaN(d.getTime())) return dobStr;
+      const day = String(d.getDate()).padStart(2, "0");
+      const months = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      ];
+      const monthName = months[d.getMonth()] || "";
+      const year = d.getFullYear();
+      return `${day}/${monthName}/${year}`;
+    } catch {
+      return dobStr;
+    }
+  };
+
+  // Commodity / metal display mapping (1 -> Gold, 2 -> Silver, 5 -> Gold / Silver)
+  const getCommodityName = (id) => {
+    const str = String(id ?? "").trim();
+    if (str === "1") return "Gold";
+    if (str === "2") return "Silver";
+    if (str === "5") return "Gold / Silver";
+    return id || "Gold";
+  };
+  const metalType = getCommodityName(membershipData.commodityTypeId);
 
   // Installment amount & Total Payable in India (exact amount without GST markup)
   const installmentAmt = Number(membershipData.installmentAmount) || 0;
   const totalPayable = installmentAmt;
+
+  // Accumulated Gold & Silver weights for weight accumulation schemes
+  let fallbackWeights = {};
+  try {
+    fallbackWeights = JSON.parse(localStorage.getItem("calculatedWeight") || "{}");
+  } catch {}
+
+  let resolvedGoldWeight =
+    membershipData.goldWeight ||
+    (membershipData.calculatedWeight?.gold
+      ? `${membershipData.calculatedWeight.gold} gms`
+      : fallbackWeights?.gold
+      ? `${fallbackWeights.gold} gms`
+      : null);
+
+  let resolvedSilverWeight =
+    membershipData.silverWeight ||
+    (membershipData.calculatedWeight?.silverCoin
+      ? `${membershipData.calculatedWeight.silverCoin} gms`
+      : fallbackWeights?.silverCoin
+      ? `${fallbackWeights.silverCoin} gms`
+      : null);
+
+  if (membershipData.schemeType === "W" && installmentAmt > 0) {
+    if (!resolvedGoldWeight && membershipData.commodityRates?.[1]) {
+      resolvedGoldWeight = `${(installmentAmt / membershipData.commodityRates[1]).toFixed(3)} gms`;
+    }
+    if (
+      !resolvedSilverWeight &&
+      (String(membershipData.commodityTypeId) === "5" || Number(membershipData.commodityTypeId) === 5) &&
+      membershipData.commodityRates?.[7]
+    ) {
+      resolvedSilverWeight = `${(installmentAmt / membershipData.commodityRates[7]).toFixed(3)} gms`;
+    }
+  }
+
+  const isWeightScheme =
+    membershipData.schemeType === "W" ||
+    Boolean(resolvedGoldWeight) ||
+    Boolean(resolvedSilverWeight);
 
   // Resolve Photo URL
   const resolvePhotoUrl = (raw) => {
@@ -208,7 +293,7 @@ const EnrollmentPreviewModal = ({
               <div className="epm-field">
                 <span className="epm-label">Date of Birth / Age</span>
                 <span className="epm-val">
-                  {subscriberData.dob || "-"} {customerAge ? `(${customerAge} yrs)` : ""}
+                  {formatDob(subscriberData.dob)} {customerAge ? `(${customerAge} yrs)` : ""}
                 </span>
               </div>
               <div className="epm-field">
@@ -266,6 +351,12 @@ const EnrollmentPreviewModal = ({
                     {guardaianData.guardphone || guardaianData.guardGender || "-"}
                   </span>
                 </div>
+                {guardaianData.guarddob && (
+                  <div className="epm-field">
+                    <span className="epm-label">Guardian DOB</span>
+                    <span className="epm-val">{formatDob(guardaianData.guarddob)}</span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -318,6 +409,31 @@ const EnrollmentPreviewModal = ({
                   {branchName || branchCode || membershipData.branch || "-"}
                 </span>
               </div>
+
+              {/* Accumulated Weights for Weight Schemes (e.g. Shreyas / Gold / Silver Coin) */}
+              {isWeightScheme && resolvedGoldWeight && (
+                <div className="epm-field">
+                  <span className="epm-label">
+                    Accumulated Gold Wt
+                    {membershipData.commodityRates?.[1]
+                      ? ` (@ ${formatCurrency(membershipData.commodityRates[1], activeCurrency)}/g)`
+                      : ""}
+                  </span>
+                  <span className="epm-val epm-val-highlight">{resolvedGoldWeight}</span>
+                </div>
+              )}
+
+              {isWeightScheme && resolvedSilverWeight && (
+                <div className="epm-field">
+                  <span className="epm-label">
+                    Accumulated Silver Wt
+                    {membershipData.commodityRates?.[7]
+                      ? ` (@ ${formatCurrency(membershipData.commodityRates[7], activeCurrency)}/g)`
+                      : ""}
+                  </span>
+                  <span className="epm-val epm-val-highlight">{resolvedSilverWeight}</span>
+                </div>
+              )}
             </div>
           </div>
 

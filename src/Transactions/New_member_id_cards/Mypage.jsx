@@ -284,7 +284,12 @@ const Mypage = () => {
         NomineeAddress: nomineeData.nomineeaddress || "",
         NomineeRelation: nomineeData.relationshipName || nomineeData.relationship || "",
         GuardianName: guardaianData.guardname || "",
-        MetalType: membershipData.commodityTypeId === 1 ? "Gold" : "Silver",
+        MetalType:
+          String(membershipData.commodityTypeId) === "1"
+            ? "Gold"
+            : String(membershipData.commodityTypeId) === "5"
+            ? "Gold / Silver"
+            : "Silver",
         SalesPersonName: "",
         AccountNo: bankData.accountNo || "",
         IFSC: bankData.ifscCode || "",
