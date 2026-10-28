@@ -763,9 +763,26 @@ const Mypage = () => {
     validateBeforePreviewOrSaveRef.current = validateBeforePreviewOrSave;
   }, [validateBeforePreviewOrSave]);
 
-  const getImageUrl = (url) => {
-    setImage(url);
-  };
+  const getImageUrl = useCallback((url) => {
+    setImage(url || "");
+    if (url) {
+      setUploadedDocs((prev) => [
+        ...(prev || []).filter((d) => d && d.Type !== "IMG" && Number(d.documentTypeId || d.DocumentTypeID) !== 30),
+        {
+          Type: "IMG",
+          ImagePath: url,
+          ImageURL: url,
+          Name: "Profile Image",
+          documentTypeId: 30,
+          documentNo: "Profile Image",
+        },
+      ]);
+      setAllDocs((prev) => [
+        ...(prev || []).filter((d) => d && Number(d.documentTypeId) !== 30),
+        { documentTypeId: 30, imagePath: url, documentNo: "Profile Image" },
+      ]);
+    }
+  }, []);
   const handleDraft = async() => {
     //  event.preventDefault();
     // alert("1 handledraft called")
