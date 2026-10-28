@@ -1023,25 +1023,23 @@ const Mypage = () => {
       const aadhar_No = aadharNo ? aadharNo : null;
       const cleanBranch = getCleanBranch(branch || membershipData.branch);
       const mob = subscriberData.mobileNo;
-      // Reuse existing SignRequestID when available (avoid regenerating PDF on every Save)
-      let signRequestId =
-        sessionStorage.getItem(mob ? `currentSignRequestId_${mob}` : "currentSignRequestId") ||
-        sessionStorage.getItem("currentSignRequestId") ||
-        null;
-      if (!signRequestId) {
-        // Check web.config flag: EnableSignatureEmail (0 = skip, 1 = send email). Default: enabled.
-        const isSignatureEmailEnabled = (localStorage.getItem("EnableSignatureEmail") || window.APP_CONFIG?.EnableSignatureEmail || "1") === "1";
-        if (isSignatureEmailEnabled) {
-          try {
-            signRequestId = await generateEnrollmentPdf(cleanBranch);
-          } catch (pdfErr) {
-            console.warn("PDF generation failed (continuing draft save):", pdfErr);
-            signRequestId = null;
-          }
-        } else {
-          console.log("[SaveDraft] Signature email disabled via EnableSignatureEmail=0 — skipping generateEnrollmentPdf.");
-        }
-      }
+      // Signature / enrollment PDF generation commented out on save for fast save
+      // let signRequestId =
+      //   sessionStorage.getItem(mob ? `currentSignRequestId_${mob}` : "currentSignRequestId") ||
+      //   sessionStorage.getItem("currentSignRequestId") ||
+      //   null;
+      // if (!signRequestId) {
+      //   const isSignatureEmailEnabled = (localStorage.getItem("EnableSignatureEmail") || window.APP_CONFIG?.EnableSignatureEmail || "1") === "1";
+      //   if (isSignatureEmailEnabled) {
+      //     try {
+      //       signRequestId = await generateEnrollmentPdf(cleanBranch);
+      //     } catch (pdfErr) {
+      //       console.warn("PDF generation failed (continuing draft save):", pdfErr);
+      //       signRequestId = null;
+      //     }
+      //   }
+      // }
+      const signRequestId = null;
       let installmentAmt = Number(membershipData.installmentAmount) || 0;
       let gstAmount = 0;
       let totalAmount = installmentAmt;
@@ -1133,9 +1131,10 @@ const Mypage = () => {
         setdraftIDData(response.data.DraftID);
         console.log("response.data", response.data);
 
-        // 2) After draft save → country portal newmember-creationTE
-        //    India  → VrudhiPortalAPI/.../newmember-creationTE
-        //    Singapore → VrudhiPortalAPISG/.../newmember-creationTE
+        // Unused during save (no membership creation or document sync on draft save step)
+        // Commented out for fast save:
+        // newmember-creationTE, finalize-signed-pdf, finalize-from-draft, upload-to-crm
+        /*
         if (response.data.DraftID) {
           const newMemberUrl = getNewMemberApiUrl(countryCode);
           fetch(newMemberUrl, {
@@ -1211,6 +1210,7 @@ const Mypage = () => {
             .then((d) => console.log("[CRM] upload-to-crm after draft save:", d))
             .catch((e) => console.warn("[CRM] Upload failed (non-blocking):", e));
         }
+        */
 
         setIsDraftSaved(true);
 
@@ -1596,23 +1596,21 @@ const Mypage = () => {
           const cleanBranch = getCleanBranch(branch || membershipData.branch);
           
           const mob = subscriberData.mobileNo;
-          let signRequestId =
-            sessionStorage.getItem(mob ? `currentSignRequestId_${mob}` : "currentSignRequestId") ||
-            sessionStorage.getItem("currentSignRequestId") ||
-            null;
-          if (!signRequestId) {
-            // Check web.config flag: EnableSignatureEmail (0 = skip, 1 = send email). Default: enabled.
-            const isSignatureEmailEnabled = (localStorage.getItem("EnableSignatureEmail") || window.APP_CONFIG?.EnableSignatureEmail || "1") === "1";
-            if (isSignatureEmailEnabled) {
-              try {
-                signRequestId = await generateEnrollmentPdf(cleanBranch);
-              } catch (e) {
-                console.warn("PDF generate failed on offline update:", e);
-              }
-            } else {
-              console.log("[OfflineUpdate] Signature email disabled via EnableSignatureEmail=0 — skipping generateEnrollmentPdf.");
-            }
-          }
+          // Signature / enrollment PDF is not used on offline update
+          // let signRequestId =
+          //   sessionStorage.getItem(mob ? `currentSignRequestId_${mob}` : "currentSignRequestId") ||
+          //   sessionStorage.getItem("currentSignRequestId") ||
+          //   null;
+          // if (!signRequestId) {
+          //   const isSignatureEmailEnabled = (localStorage.getItem("EnableSignatureEmail") || window.APP_CONFIG?.EnableSignatureEmail || "1") === "1";
+          //   if (isSignatureEmailEnabled) {
+          //     try {
+          //       signRequestId = await generateEnrollmentPdf(cleanBranch);
+          //     } catch (e) {
+          //       console.warn("PDF generate failed on offline update:", e);
+          //     }
+          //   }
+          // }
           setIsSaving(false);
           setopenofflineModal(true);
           return draftIDData;
