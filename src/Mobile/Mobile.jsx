@@ -538,7 +538,7 @@ const Mobile = () => {
 //     setLoading(true);
 
 //     // Hardcode the OTP check
-//     if (receivedOtp === "123456") {
+//     if (receivedOtp === "748341") {
 //       // Successful OTP verification
 //       navigate("/MobileVer", { state: { phoneNo } });
 //       setShowModal(false); // Close the modal
@@ -626,12 +626,12 @@ const Mobile = () => {
 
     const trimmedOtp = receivedOtp.trim();
 
-    // Bypass check: If OTP is 123456 (for Singapore / testing)
-    if (trimmedOtp === "123456") {
+    // Bypass check: If OTP is 748341 (for Singapore / testing)
+    if (trimmedOtp === "748341") {
       const schemeToPass = enrolledScheme || viewingScheme || activeSchemes[0] || "";
       dispatch(setIsCountryLocked(true));
       navigate("/MobileVer", { state: { phoneNo, branch, selectedScheme: schemeToPass } });
-      console.log("OTP bypassed successfully (123456)");
+      console.log("OTP bypassed successfully (748341)");
       setShowModal(false);
       setLoading(false);
       return;
@@ -659,7 +659,7 @@ const Mobile = () => {
       console.log("OTP verification response:", data);
 
       const isOtpValid = (d, otp) => {
-        if (otp === "123456") return true;
+        if (otp === "748341") return true;
         if (!d) return false;
         const s = String(d.status || d.Status || d.success || d.Success || d.message || d.Message || "").toLowerCase();
         return (
@@ -689,8 +689,8 @@ const Mobile = () => {
       }
     } catch (err) {
       console.error("Error verifying OTP:", err);
-      // Fallback for dev/testing: allow 123456
-      if (receivedOtp.trim() === "123456") {
+      // Fallback for dev/testing: allow 748341
+      if (receivedOtp.trim() === "748341") {
         const schemeToPass = enrolledScheme || viewingScheme || activeSchemes[0] || "";
         dispatch(setIsCountryLocked(true));
         navigate("/MobileVer", { state: { phoneNo, branch, selectedScheme: schemeToPass } });
