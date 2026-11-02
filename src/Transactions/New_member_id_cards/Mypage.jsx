@@ -867,8 +867,15 @@ const Mypage = () => {
       ...(Array.isArray(selectedCustomerID.document) ? selectedCustomerID.document : []),
     ];
 
-    const profileImage = selectedCustomerID.ImageURL || selectedCustomerID.ImageUrl || selectedCustomerID.Image;
-    if (profileImage && !rawDocs.some(d => (d.ImageURL || d.ImageUrl || d.ImagePath) === profileImage)) {
+    const profileImage =
+      selectedCustomerID.Profileimg ||
+      selectedCustomerID.profileimg ||
+      selectedCustomerID.ProfileImg ||
+      selectedCustomerID.ImageURL ||
+      selectedCustomerID.ImageUrl ||
+      selectedCustomerID.Image;
+
+    if (profileImage && !rawDocs.some(d => (d.ImageURL || d.ImageUrl || d.ImagePath || d.Profileimg || d.profileimg) === profileImage)) {
       rawDocs.push({
         DocumentTypeID: 30,
         Type: "IMG",
@@ -876,6 +883,22 @@ const Mypage = () => {
         ImagePath: profileImage,
         DocumentDescription: "Profile Image"
       });
+    }
+
+    // Set customer photo directly in Mypage state so saveDraft does not block on empty image
+    const profileDocFromRaw = rawDocs.find(
+      (d) => d && (d.Type === "IMG" || Number(d.DocumentTypeID || d.documentTypeId) === 30)
+    );
+    const existingPhoto =
+      profileImage ||
+      profileDocFromRaw?.ImagePath ||
+      profileDocFromRaw?.ImageURL ||
+      profileDocFromRaw?.ImageUrl ||
+      profileDocFromRaw?.Profileimg ||
+      profileDocFromRaw?.profileimg;
+
+    if (existingPhoto) {
+      setImage(existingPhoto);
     }
 
     if (rawDocs.length > 0) {
@@ -904,21 +927,27 @@ const Mypage = () => {
       const seenTypes = new Set();
 
       rawDocs.forEach(doc => {
-        const url = doc.ImageURL || doc.ImageUrl || doc.ImagePath;
+        let url = doc.ImageURL || doc.ImageUrl || doc.ImagePath || doc.Profileimg || doc.profileimg || "";
         const typeId = Number(doc.DocumentTypeID || doc.documentTypeId || typeToIdMap[doc.Type] || (!isNaN(doc.Type) ? Number(doc.Type) : 0) || 29);
         const typeCode = typeIdToCodeMap[typeId] || (typeof doc.Type === "string" && isNaN(doc.Type) ? doc.Type : "AAD");
         const docNo = doc.DocumentDescription || doc.DocumentDecription || doc.Name || doc.documentNo || "";
 
-        if (url && !seenTypes.has(typeId)) {
+        // If Aadhaar or PAN has a number from CRM/eKYC but url is empty, assign dummy placeholder for UI/validation retention
+        if (!url && docNo) {
+          if (typeCode === "AAD") url = "/images/aadhardummy.png";
+          else if (typeCode === "PAN") url = "/images/pandummy.png";
+        }
+
+        if ((url || docNo) && !seenTypes.has(typeId)) {
           seenTypes.add(typeId);
           uniqueDocs.push({
             Type: typeCode,
-            ImagePath: url,
-            ImageURL: url,
+            ImagePath: url || "",
+            ImageURL: url || "",
             Name: docNo,
             documentNo: docNo,
             documentTypeId: typeId,
-            imagePath: url,
+            imagePath: url || "",
           });
         }
       });
@@ -1020,7 +1049,8 @@ const Mypage = () => {
       console.log("add2", add2);
 
       const isaadharVerified = aadharverified || 0;
-      const aadhar_No = aadharNo ? aadharNo : null;
+      const aadharDoc = (alldocs || []).find((d) => Number(d.documentTypeId) === 29);
+      const aadhar_No = aadharNo || (aadharDoc ? aadharDoc.documentNo : null) || selectedCustomerID?.AadharNo || null;
       const cleanBranch = getCleanBranch(branch || membershipData.branch);
       const mob = subscriberData.mobileNo;
       // Signature / enrollment PDF generation commented out on save for fast save

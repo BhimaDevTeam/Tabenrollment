@@ -49,12 +49,17 @@ const CameraComponent = ({ getImageUrl, capturedImage, aadharVerified }) => {
       (doc) => doc.Type === "IMG" || Number(doc.DocumentTypeID) === 30 || Number(doc.documentTypeId) === 30
     );
     const imgUrl =
+      selectedCustomerID.Profileimg ||
+      selectedCustomerID.profileimg ||
+      selectedCustomerID.ProfileImg ||
       selectedCustomerID.ImageURL ||
       selectedCustomerID.ImageUrl ||
       selectedCustomerID.Image ||
       profileDoc?.ImageURL ||
       profileDoc?.ImageUrl ||
-      profileDoc?.ImagePath;
+      profileDoc?.ImagePath ||
+      profileDoc?.Profileimg ||
+      profileDoc?.profileimg;
 
     if (imgUrl) {
       setExistingProfileImage(imgUrl);
