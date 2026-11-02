@@ -1010,6 +1010,61 @@ const Mypage = () => {
 //     }
 //   };
 
+  const convertUrlToBase64 = async (url) => {
+    if (!url || typeof url !== "string") return url;
+    if (url.startsWith("data:image") || url.startsWith("data:application/pdf")) return url;
+    if (!url.startsWith("http://") && !url.startsWith("https://")) return url;
+
+    // 1. Try standard fetch
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (res.ok) {
+        const blob = await res.blob();
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        if (base64 && typeof base64 === "string" && base64.startsWith("data:")) {
+          return base64;
+        }
+      }
+    } catch (fetchErr) {
+      console.warn("Direct fetch to base64 failed, trying canvas fallback:", fetchErr);
+    }
+
+    // 2. Try Image + Canvas fallback
+    try {
+      const base64FromCanvas = await new Promise((resolve, reject) => {
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+            resolve(dataUrl);
+          } catch (cErr) {
+            reject(cErr);
+          }
+        };
+        img.onerror = (e) => reject(e);
+        img.src = url;
+      });
+      if (base64FromCanvas && typeof base64FromCanvas === "string" && base64FromCanvas.startsWith("data:")) {
+        return base64FromCanvas;
+      }
+    } catch (canvasErr) {
+      console.warn("Canvas to base64 failed:", canvasErr);
+    }
+
+    return url;
+  };
+
   const saveDraft = async (overrideMode) => {
     // alert("in savdraaft called 2")
     try {
@@ -1090,6 +1145,40 @@ const Mypage = () => {
         }
       }
 
+      // Convert remote/display image URLs to base64 before saving
+      let finalImageUrl = image;
+      if (finalImageUrl && typeof finalImageUrl === "string" && (finalImageUrl.startsWith("http://") || finalImageUrl.startsWith("https://"))) {
+        try {
+          finalImageUrl = await convertUrlToBase64(finalImageUrl);
+        } catch (e) {
+          console.warn("Failed to convert imageUrl to base64:", e);
+        }
+      }
+
+      let finalDocs = alldocs;
+      if (Array.isArray(alldocs) && alldocs.length > 0) {
+        finalDocs = await Promise.all(
+          alldocs.map(async (doc) => {
+            const pathUrl = doc.imagePath || doc.ImagePath || doc.ImageURL || "";
+            if (pathUrl && typeof pathUrl === "string" && (pathUrl.startsWith("http://") || pathUrl.startsWith("https://"))) {
+              try {
+                const b64 = await convertUrlToBase64(pathUrl);
+                return {
+                  ...doc,
+                  imagePath: b64,
+                  ImagePath: b64,
+                  ImageURL: b64,
+                };
+              } catch (e) {
+                console.warn("Failed to convert doc imagePath to base64:", e);
+                return doc;
+              }
+            }
+            return doc;
+          })
+        );
+      }
+
       const draftData = {
         ...(draftIDData ? { DraftID: draftIDData } : {}),
         country: selectedCountry || "India",
@@ -1124,9 +1213,9 @@ const Mypage = () => {
         MembershipNo: membershipData.membershipNo || "",
         IsAadarVerified: isaadharVerified,
         IsCancelFlag: "N",
-        imageUrl: image,
+        imageUrl: finalImageUrl,
         inserted_By: "BY",
-        documents: alldocs,
+        documents: finalDocs,
         TnxType: overrideMode || paymentmode,
         AadharNo: aadhar_No,
         SignRequestID: signRequestId,

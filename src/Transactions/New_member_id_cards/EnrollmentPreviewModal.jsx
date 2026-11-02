@@ -27,6 +27,7 @@ const EnrollmentPreviewModal = ({
   noOfInstallments = 11,
 }) => {
   const [imgError, setImgError] = useState(false);
+  const [popupDocImage, setPopupDocImage] = useState(null);
 
   if (!open) return null;
 
@@ -187,6 +188,23 @@ const EnrollmentPreviewModal = ({
       !doc.Type?.startsWith?.("SOD")
   );
 
+  // Extract PAN Card document and number
+  const panDoc = (uploadedDocs || []).find(
+    (doc) =>
+      doc &&
+      (doc.Type === "PAN" ||
+        doc.Type === "NRIC" ||
+        String(doc.documentTypeId) === "25" ||
+        String(doc.DocumentTypeID) === "25")
+  );
+  const panNumber =
+    panDoc?.Name ||
+    panDoc?.documentNo ||
+    subscriberData?.panNo ||
+    subscriberData?.pan ||
+    subscriberData?.CustPanNo ||
+    "";
+
   // Has guardian info
   const hasGuardian =
     guardaianData &&
@@ -325,6 +343,15 @@ const EnrollmentPreviewModal = ({
                   ) : (
                     <span className="epm-badge epm-badge-pending ms-1">Unverified</span>
                   )}
+                </span>
+              </div>
+              <div className="epm-field">
+                <span className="epm-label">PAN Card Number</span>
+                <span className="epm-val">
+                  {panNumber || "-"}
+                  {panNumber ? (
+                    <span className="epm-badge epm-badge-verified ms-1">Available</span>
+                  ) : null}
                 </span>
               </div>
               <div className="epm-field epm-grid-full">
@@ -550,16 +577,84 @@ const EnrollmentPreviewModal = ({
               </button>
             </div>
             {kycDocs.length > 0 ? (
-              <div className="epm-docs-list">
-                {kycDocs.map((doc, idx) => (
-                  <div key={idx} className="epm-doc-chip">
-                    <span className="epm-doc-chip-icon">📎</span>
-                    <span>
-                      <strong>{doc.Type || doc.DocumentTypeName || `Doc ${idx + 1}`}:</strong>{" "}
-                      {doc.Name || doc.documentNo || "Uploaded"}
-                    </span>
-                  </div>
-                ))}
+              <div className="epm-docs-grid">
+                {kycDocs.map((doc, idx) => {
+                  const docRawUrl = doc.ImagePath || doc.ImageURL || doc.imagePath || doc.ImageUrl || "";
+                  const docUrl = resolvePhotoUrl(docRawUrl);
+                  const isPdf = typeof docUrl === "string" && (docUrl.endsWith(".pdf") || docUrl.startsWith("data:application/pdf"));
+                  const docTypeLabel =
+                    doc.Type === "PAN"
+                      ? "PAN Card"
+                      : doc.Type === "AAD"
+                      ? "Aadhaar Card"
+                      : doc.Type === "NRIC"
+                      ? "NRIC / ID"
+                      : doc.Type || doc.DocumentTypeName || `Doc ${idx + 1}`;
+
+                  return (
+                    <div key={idx} className="epm-doc-card">
+                      <div className="epm-doc-card-header">
+                        <span className="epm-doc-chip-icon">📄</span>
+                        <div className="epm-doc-card-info">
+                          <strong className="epm-doc-card-type">{docTypeLabel}</strong>
+                          <span className="epm-doc-card-no" title={doc.Name || doc.documentNo || ""}>
+                            {doc.Name || doc.documentNo || "Uploaded"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="epm-doc-preview-container">
+                        {docUrl && !isPdf ? (
+                          <div
+                            className="epm-doc-img-wrap"
+                            onClick={() =>
+                              setPopupDocImage({
+                                url: docUrl,
+                                title: `${docTypeLabel}: ${doc.Name || doc.documentNo || ""}`,
+                              })
+                            }
+                            title="Click to view full image"
+                          >
+                            <img
+                              src={docUrl}
+                              alt={docTypeLabel}
+                              className="epm-doc-thumbnail"
+                              onError={(e) => {
+                                e.target.style.display = "none";
+                                const fallback = e.target.parentElement.querySelector(".epm-doc-img-fallback");
+                                if (fallback) fallback.style.display = "flex";
+                              }}
+                            />
+                            <div className="epm-doc-img-fallback" style={{ display: "none" }}>
+                              <span>📎 Document Image</span>
+                            </div>
+                            <span className="epm-doc-hover-badge">🔍 View</span>
+                          </div>
+                        ) : isPdf ? (
+                          <div className="epm-doc-pdf-box">
+                            <span style={{ fontSize: "28px" }}>📑</span>
+                            <span>PDF Document</span>
+                            {docUrl.startsWith("http") && (
+                              <a
+                                href={docUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="epm-view-pdf-link"
+                              >
+                                Open PDF ↗
+                              </a>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="epm-doc-noimg-box">
+                            <span style={{ fontSize: "24px" }}>📋</span>
+                            <span>Verified on Record</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="epm-media-empty">No KYC documents uploaded yet</div>
@@ -709,6 +804,81 @@ const EnrollmentPreviewModal = ({
           </button>
         </div>
       </div>
+
+      {/* KYC Document Full-size Image Viewer Popup */}
+      {popupDocImage && (
+        <div
+          className="epm-doc-popup-overlay"
+          onClick={() => setPopupDocImage(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.85)",
+            zIndex: 100000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          <div
+            style={{
+              position: "relative",
+              maxWidth: "90vw",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                color: "#ffffff",
+                marginBottom: "10px",
+                background: "rgba(0,0,0,0.4)",
+                padding: "8px 14px",
+                borderRadius: "8px",
+              }}
+            >
+              <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>{popupDocImage.title}</span>
+              <button
+                type="button"
+                onClick={() => setPopupDocImage(null)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "#ffffff",
+                  fontSize: "26px",
+                  cursor: "pointer",
+                  lineHeight: 1,
+                }}
+              >
+                &times;
+              </button>
+            </div>
+            <img
+              src={popupDocImage.url}
+              alt="Document Full View"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "80vh",
+                objectFit: "contain",
+                borderRadius: "8px",
+                border: "2px solid #cd9a50",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                background: "#ffffff",
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
