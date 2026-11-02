@@ -41,6 +41,51 @@ import Paymentgateway from "./Paymentgateway";
 import Header from "../../header";
 import EnrollmentPreviewModal from "./EnrollmentPreviewModal";
 
+const remoteImageDataUrlCache = new Map();
+
+const isRemoteImageUrl = (value) =>
+  typeof value === "string" && /^https?:\/\//i.test(value.trim());
+
+// Existing CRM documents are returned as URLs, but the enrollment API accepts
+// the image bytes (the same data URL format produced by a new file upload).
+const remoteImageUrlToDataUrl = async (value, label) => {
+  const imageUrl = typeof value === "string" ? value.trim() : "";
+  if (!isRemoteImageUrl(imageUrl)) return imageUrl;
+
+  if (!remoteImageDataUrlCache.has(imageUrl)) {
+    const conversion = (async () => {
+      try {
+        const response = await fetch(imageUrl, { credentials: "omit" });
+        if (!response.ok) {
+          throw new Error(`Image request returned ${response.status}.`);
+        }
+
+        const imageBlob = await response.blob();
+        if (!imageBlob.type.startsWith("image/")) {
+          throw new Error("The response was not an image.");
+        }
+
+        return await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => reject(new Error("The image could not be read."));
+          reader.readAsDataURL(imageBlob);
+        });
+      } catch (error) {
+        console.error(`Unable to convert existing ${label} to Base64:`, error);
+        throw new Error(
+          `Unable to read the existing ${label}. Please retry or upload that image again before saving.`
+        );
+      }
+    })();
+
+    remoteImageDataUrlCache.set(imageUrl, conversion);
+    conversion.catch(() => remoteImageDataUrlCache.delete(imageUrl));
+  }
+
+  return remoteImageDataUrlCache.get(imageUrl);
+};
+
 // import { ErrorSharp } from '@mui/icons-material';
 const Mypage = () => {
   const { selectedCustomerID, selectedCountry, currencySymbol } = useSelector((state) => state.customer || {});
@@ -1090,118 +1135,31 @@ const Mypage = () => {
         }
       }
 
-      // For existing images from CRM/eKYC, send direct remote URLs (http:// or https://) as-is.
-      // For newly captured or uploaded files, they are base64 data URLs.
-      // Filter out temporary local UI dummy placeholders (/images/...).
-      const rawCustomerDocs = [
-        ...(Array.isArray(selectedCustomerID?.Documents) ? selectedCustomerID.Documents : []),
-        ...(Array.isArray(selectedCustomerID?.customerDocuments) ? selectedCustomerID.customerDocuments : []),
-        ...(Array.isArray(selectedCustomerID?.combinedDocuments) ? selectedCustomerID.combinedDocuments : []),
-        ...(Array.isArray(selectedCustomerID?.draftCustomerDocuments) ? selectedCustomerID.draftCustomerDocuments : []),
-        ...(Array.isArray(selectedCustomerID?.document) ? selectedCustomerID.document : []),
-      ];
-
-      const profileUrlFromCust =
-        selectedCustomerID?.Profileimg ||
-        selectedCustomerID?.profileimg ||
-        selectedCustomerID?.ProfileImg ||
-        selectedCustomerID?.ImageURL ||
-        selectedCustomerID?.ImageUrl ||
-        selectedCustomerID?.Image ||
-        rawCustomerDocs.find((d) => d && (d.Type === "IMG" || Number(d.DocumentTypeID || d.documentTypeId) === 30))?.ImagePath ||
-        "";
-
-      let finalImageUrl = image || profileUrlFromCust || "";
+      // A new upload is already a Base64 data URL. Convert existing CRM URLs to
+      // that same format before the request so the API never receives an image URL.
+      // Temporary local UI dummy placeholders (/images/...) are not real documents.
+      let finalImageUrl = image || "";
       if (typeof finalImageUrl === "string" && finalImageUrl.startsWith("/images/")) {
-        finalImageUrl = profileUrlFromCust && !profileUrlFromCust.startsWith("/images/") ? profileUrlFromCust : "";
+        finalImageUrl = "";
       }
+      finalImageUrl = await remoteImageUrlToDataUrl(finalImageUrl, "profile image");
 
-      const typeIdToCode = {
-        29: "AAD",
-        25: "PAN",
-        26: "DRI",
-        27: "VOT",
-        28: "PAS",
-        30: "IMG",
-        24: "NEF",
-      };
-
-      const typeCodeToId = {
-        AAD: 29,
-        PAN: 25,
-        NRIC: 25,
-        DRI: 26,
-        VOT: 27,
-        PAS: 28,
-        IMG: 30,
-        NEF: 24,
-      };
-
-      const finalDocs = (alldocs || []).map((doc) => {
+      const finalDocs = await Promise.all((alldocs || []).map(async (doc) => {
         let pathUrl = doc.imagePath || doc.ImagePath || doc.ImageURL || "";
-        const tId = Number(doc.documentTypeId || doc.DocumentTypeID || typeCodeToId[doc.Type] || 0);
-
-        // If pathUrl was empty or a UI placeholder (/images/...), look up real URL in rawCustomerDocs
-        if (!pathUrl || pathUrl.startsWith("/images/")) {
-          const match = rawCustomerDocs.find(
-            (r) =>
-              Number(r.DocumentTypeID || r.documentTypeId) === tId ||
-              r.Type === doc.Type ||
-              (tId && Number(typeCodeToId[r.Type]) === tId) ||
-              (doc.documentNo && r.Name === doc.documentNo)
-          );
-          if (match) {
-            const rawPath = match.ImagePath || match.ImageURL || match.ImageUrl || match.Profileimg || match.profileimg || "";
-            if (rawPath && !rawPath.startsWith("/images/")) {
-              pathUrl = rawPath;
-            }
-          }
-        }
-
         if (typeof pathUrl === "string" && pathUrl.startsWith("/images/")) {
           pathUrl = "";
         }
-
+        pathUrl = await remoteImageUrlToDataUrl(
+          pathUrl,
+          doc.documentNo || doc.Name || "document image"
+        );
         return {
-          documentTypeId: tId,
-          documentNo: doc.documentNo || doc.DocumentDescription || doc.DocumentDecription || doc.Name || "",
+          ...doc,
           imagePath: pathUrl,
           ImagePath: pathUrl,
           ImageURL: pathUrl,
-          Type: doc.Type || typeIdToCode[tId] || "",
         };
-      });
-
-      // Ensure all documents from rawCustomerDocs (PAN, IMG, etc.) are present in finalDocs with their URLs
-      rawCustomerDocs.forEach((rDoc) => {
-        const tId = Number(rDoc.DocumentTypeID || rDoc.documentTypeId || typeCodeToId[rDoc.Type] || 0);
-        const rUrl = rDoc.ImagePath || rDoc.ImageURL || rDoc.ImageUrl || rDoc.Profileimg || rDoc.profileimg || "";
-        const rDocNo = rDoc.Name || rDoc.documentNo || rDoc.DocumentDescription || rDoc.DocumentDecription || "";
-
-        if (tId) {
-          const existingIdx = finalDocs.findIndex((fd) => fd.documentTypeId === tId);
-          if (existingIdx !== -1) {
-            // If existing item has empty or non-http imagePath but raw has http URL, restore it!
-            if ((!finalDocs[existingIdx].imagePath || !finalDocs[existingIdx].imagePath.startsWith("http")) && rUrl && rUrl.startsWith("http")) {
-              finalDocs[existingIdx].imagePath = rUrl;
-              finalDocs[existingIdx].ImagePath = rUrl;
-              finalDocs[existingIdx].ImageURL = rUrl;
-            }
-            if (!finalDocs[existingIdx].documentNo && rDocNo) {
-              finalDocs[existingIdx].documentNo = rDocNo;
-            }
-          } else if (rUrl && rUrl.startsWith("http")) {
-            finalDocs.push({
-              documentTypeId: tId,
-              documentNo: rDocNo,
-              imagePath: rUrl,
-              ImagePath: rUrl,
-              ImageURL: rUrl,
-              Type: rDoc.Type || typeIdToCode[tId] || "",
-            });
-          }
-        }
-      });
+      }));
 
       const draftData = {
         ...(draftIDData ? { DraftID: draftIDData } : {}),
