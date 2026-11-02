@@ -1091,24 +1091,116 @@ const Mypage = () => {
       }
 
       // For existing images from CRM/eKYC, send direct remote URLs (http:// or https://) as-is.
-      // For newly captured or uploaded files, they are already base64 data URLs.
+      // For newly captured or uploaded files, they are base64 data URLs.
       // Filter out temporary local UI dummy placeholders (/images/...).
-      let finalImageUrl = image || "";
+      const rawCustomerDocs = [
+        ...(Array.isArray(selectedCustomerID?.Documents) ? selectedCustomerID.Documents : []),
+        ...(Array.isArray(selectedCustomerID?.customerDocuments) ? selectedCustomerID.customerDocuments : []),
+        ...(Array.isArray(selectedCustomerID?.combinedDocuments) ? selectedCustomerID.combinedDocuments : []),
+        ...(Array.isArray(selectedCustomerID?.draftCustomerDocuments) ? selectedCustomerID.draftCustomerDocuments : []),
+        ...(Array.isArray(selectedCustomerID?.document) ? selectedCustomerID.document : []),
+      ];
+
+      const profileUrlFromCust =
+        selectedCustomerID?.Profileimg ||
+        selectedCustomerID?.profileimg ||
+        selectedCustomerID?.ProfileImg ||
+        selectedCustomerID?.ImageURL ||
+        selectedCustomerID?.ImageUrl ||
+        selectedCustomerID?.Image ||
+        rawCustomerDocs.find((d) => d && (d.Type === "IMG" || Number(d.DocumentTypeID || d.documentTypeId) === 30))?.ImagePath ||
+        "";
+
+      let finalImageUrl = image || profileUrlFromCust || "";
       if (typeof finalImageUrl === "string" && finalImageUrl.startsWith("/images/")) {
-        finalImageUrl = "";
+        finalImageUrl = profileUrlFromCust && !profileUrlFromCust.startsWith("/images/") ? profileUrlFromCust : "";
       }
+
+      const typeIdToCode = {
+        29: "AAD",
+        25: "PAN",
+        26: "DRI",
+        27: "VOT",
+        28: "PAS",
+        30: "IMG",
+        24: "NEF",
+      };
+
+      const typeCodeToId = {
+        AAD: 29,
+        PAN: 25,
+        NRIC: 25,
+        DRI: 26,
+        VOT: 27,
+        PAS: 28,
+        IMG: 30,
+        NEF: 24,
+      };
 
       const finalDocs = (alldocs || []).map((doc) => {
         let pathUrl = doc.imagePath || doc.ImagePath || doc.ImageURL || "";
+        const tId = Number(doc.documentTypeId || doc.DocumentTypeID || typeCodeToId[doc.Type] || 0);
+
+        // If pathUrl was empty or a UI placeholder (/images/...), look up real URL in rawCustomerDocs
+        if (!pathUrl || pathUrl.startsWith("/images/")) {
+          const match = rawCustomerDocs.find(
+            (r) =>
+              Number(r.DocumentTypeID || r.documentTypeId) === tId ||
+              r.Type === doc.Type ||
+              (tId && Number(typeCodeToId[r.Type]) === tId) ||
+              (doc.documentNo && r.Name === doc.documentNo)
+          );
+          if (match) {
+            const rawPath = match.ImagePath || match.ImageURL || match.ImageUrl || match.Profileimg || match.profileimg || "";
+            if (rawPath && !rawPath.startsWith("/images/")) {
+              pathUrl = rawPath;
+            }
+          }
+        }
+
         if (typeof pathUrl === "string" && pathUrl.startsWith("/images/")) {
           pathUrl = "";
         }
+
         return {
-          ...doc,
+          documentTypeId: tId,
+          documentNo: doc.documentNo || doc.DocumentDescription || doc.DocumentDecription || doc.Name || "",
           imagePath: pathUrl,
           ImagePath: pathUrl,
           ImageURL: pathUrl,
+          Type: doc.Type || typeIdToCode[tId] || "",
         };
+      });
+
+      // Ensure all documents from rawCustomerDocs (PAN, IMG, etc.) are present in finalDocs with their URLs
+      rawCustomerDocs.forEach((rDoc) => {
+        const tId = Number(rDoc.DocumentTypeID || rDoc.documentTypeId || typeCodeToId[rDoc.Type] || 0);
+        const rUrl = rDoc.ImagePath || rDoc.ImageURL || rDoc.ImageUrl || rDoc.Profileimg || rDoc.profileimg || "";
+        const rDocNo = rDoc.Name || rDoc.documentNo || rDoc.DocumentDescription || rDoc.DocumentDecription || "";
+
+        if (tId) {
+          const existingIdx = finalDocs.findIndex((fd) => fd.documentTypeId === tId);
+          if (existingIdx !== -1) {
+            // If existing item has empty or non-http imagePath but raw has http URL, restore it!
+            if ((!finalDocs[existingIdx].imagePath || !finalDocs[existingIdx].imagePath.startsWith("http")) && rUrl && rUrl.startsWith("http")) {
+              finalDocs[existingIdx].imagePath = rUrl;
+              finalDocs[existingIdx].ImagePath = rUrl;
+              finalDocs[existingIdx].ImageURL = rUrl;
+            }
+            if (!finalDocs[existingIdx].documentNo && rDocNo) {
+              finalDocs[existingIdx].documentNo = rDocNo;
+            }
+          } else if (rUrl && rUrl.startsWith("http")) {
+            finalDocs.push({
+              documentTypeId: tId,
+              documentNo: rDocNo,
+              imagePath: rUrl,
+              ImagePath: rUrl,
+              ImageURL: rUrl,
+              Type: rDoc.Type || typeIdToCode[tId] || "",
+            });
+          }
+        }
       });
 
       const draftData = {
