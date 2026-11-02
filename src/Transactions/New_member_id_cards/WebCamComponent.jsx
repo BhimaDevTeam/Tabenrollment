@@ -27,6 +27,8 @@ const CameraComponent = ({ getImageUrl, capturedImage, aadharVerified }) => {
     if (!selectedCustomerID || Object.keys(selectedCustomerID).length === 0) return;
 
     const custId =
+      selectedCustomerID.ID ||
+      selectedCustomerID.NewCustID ||
       selectedCustomerID.CustomerID ||
       selectedCustomerID.Cust_ID ||
       selectedCustomerID.id ||

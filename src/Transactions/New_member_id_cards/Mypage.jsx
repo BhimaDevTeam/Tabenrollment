@@ -41,50 +41,12 @@ import Paymentgateway from "./Paymentgateway";
 import Header from "../../header";
 import EnrollmentPreviewModal from "./EnrollmentPreviewModal";
 
-const remoteImageDataUrlCache = new Map();
-
-const isRemoteImageUrl = (value) =>
-  typeof value === "string" && /^https?:\/\//i.test(value.trim());
-
-// Existing CRM documents are returned as URLs, but the enrollment API accepts
-// the image bytes (the same data URL format produced by a new file upload).
-const remoteImageUrlToDataUrl = async (value, label) => {
-  const imageUrl = typeof value === "string" ? value.trim() : "";
-  if (!isRemoteImageUrl(imageUrl)) return imageUrl;
-
-  if (!remoteImageDataUrlCache.has(imageUrl)) {
-    const conversion = (async () => {
-      try {
-        const response = await fetch(imageUrl, { credentials: "omit" });
-        if (!response.ok) {
-          throw new Error(`Image request returned ${response.status}.`);
-        }
-
-        const imageBlob = await response.blob();
-        if (!imageBlob.type.startsWith("image/")) {
-          throw new Error("The response was not an image.");
-        }
-
-        return await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error("The image could not be read."));
-          reader.readAsDataURL(imageBlob);
-        });
-      } catch (error) {
-        console.error(`Unable to convert existing ${label} to Base64:`, error);
-        throw new Error(
-          `Unable to read the existing ${label}. Please retry or upload that image again before saving.`
-        );
-      }
-    })();
-
-    remoteImageDataUrlCache.set(imageUrl, conversion);
-    conversion.catch(() => remoteImageDataUrlCache.delete(imageUrl));
-  }
-
-  return remoteImageDataUrlCache.get(imageUrl);
-};
+// New uploads already contain a Base64 data URL. Browsers cannot read existing
+// JPP image URLs because that host does not allow CORS. The unchanged
+// draftenrollment request sends those approved URLs to the server, where the
+// image bytes are retrieved and saved exactly like a Base64 upload.
+const prepareImageForDraftSave = (value) =>
+  typeof value === "string" ? value.trim() : "";
 
 // import { ErrorSharp } from '@mui/icons-material';
 const Mypage = () => {
@@ -1011,24 +973,33 @@ const Mypage = () => {
   const handleFileUpload = (data) => {
     setUploadedFile(data); // Store the document data
     if (data) {
-      setAllDocs((prevDocs) => [
-        ...prevDocs,
-        {
-          documentTypeId: Number(data.docType),
-          imagePath: data.documentData,
-          documentNo: data.docNumber,
-        },
-      ]);
-    }
-    console.log("xcxcxcxc", data, alldocs, selectedCustomerID.Documents,uploadedFile,uploadedDocs); // Log the data for debugging
-    // ImagePath(documentData), Name(docNumber), Type(docType), UpdateOn
-    const docObj = {};
-    docObj.Name = data.docNumber;
-    docObj.Type = docObjTypeId[data.docType];
-    docObj.ImagePath = data.documentData;
+      const typeId = Number(data.docType);
+      const typeCode = docObjTypeId[data.docType] || "DOC";
+      const newDocObj = {
+        documentTypeId: typeId,
+        imagePath: data.documentData,
+        ImagePath: data.documentData,
+        ImageURL: data.documentData,
+        documentNo: data.docNumber,
+        Name: data.docNumber,
+        Type: typeCode,
+      };
 
-    // setUploadedDocs([ ...selectedCustomerID.Documents, ...uploadedDocs, docObj]);
-    setUploadedDocs((prev) => [...prev, docObj]);
+      setAllDocs((prevDocs) => {
+        const filtered = (prevDocs || []).filter(
+          (d) => Number(d.documentTypeId || d.DocumentTypeID) !== typeId
+        );
+        return [...filtered, newDocObj];
+      });
+
+      setUploadedDocs((prevDocs) => {
+        const filtered = (prevDocs || []).filter(
+          (d) => Number(d.documentTypeId || d.DocumentTypeID) !== typeId && d.Type !== typeCode
+        );
+        return [...filtered, newDocObj];
+      });
+    }
+    console.log("xcxcxcxc", data, alldocs, selectedCustomerID?.Documents, uploadedFile, uploadedDocs);
   };
   useEffect(() => {
     console.log("uploadedDocs in mypage", uploadedDocs);
@@ -1135,31 +1106,32 @@ const Mypage = () => {
         }
       }
 
-      // A new upload is already a Base64 data URL. Convert existing CRM URLs to
-      // that same format before the request so the API never receives an image URL.
+      // New uploads retain their Base64 data URLs. Existing CRM image URLs are
+      // converted into saved image bytes by the unchanged server endpoint.
       // Temporary local UI dummy placeholders (/images/...) are not real documents.
       let finalImageUrl = image || "";
       if (typeof finalImageUrl === "string" && finalImageUrl.startsWith("/images/")) {
         finalImageUrl = "";
       }
-      finalImageUrl = await remoteImageUrlToDataUrl(finalImageUrl, "profile image");
+      finalImageUrl = prepareImageForDraftSave(finalImageUrl);
 
-      const finalDocs = await Promise.all((alldocs || []).map(async (doc) => {
-        let pathUrl = doc.imagePath || doc.ImagePath || doc.ImageURL || "";
-        if (typeof pathUrl === "string" && pathUrl.startsWith("/images/")) {
-          pathUrl = "";
-        }
-        pathUrl = await remoteImageUrlToDataUrl(
-          pathUrl,
-          doc.documentNo || doc.Name || "document image"
-        );
-        return {
-          ...doc,
-          imagePath: pathUrl,
-          ImagePath: pathUrl,
-          ImageURL: pathUrl,
-        };
-      }));
+      const finalDocs = (alldocs || [])
+        .filter((doc) => doc && Number(doc.documentTypeId || doc.DocumentTypeID) !== 30 && doc.Type !== "IMG")
+        .map((doc) => {
+          let pathUrl = doc.imagePath || doc.ImagePath || doc.ImageURL || "";
+          if (typeof pathUrl === "string" && pathUrl.startsWith("/images/")) {
+            pathUrl = "";
+          }
+          pathUrl = prepareImageForDraftSave(pathUrl);
+          const docNum = doc.documentNo || doc.docNumber || doc.Name || doc.DocumentDescription || doc.DocumentDecription || "";
+          return {
+            documentTypeId: Number(doc.documentTypeId || doc.DocumentTypeID || doc.docType || 25),
+            documentNo: docNum,
+            imagePath: pathUrl,
+            ImagePath: pathUrl,
+            ImageURL: pathUrl,
+          };
+        });
 
       const draftData = {
         ...(draftIDData ? { DraftID: draftIDData } : {}),

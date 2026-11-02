@@ -185,7 +185,7 @@ const MobileVer = () => {
         const docImg = Array.isArray(e.Documents) ? e.Documents.find(d => d.Type === "IMG") : null;
         const aadDoc = Array.isArray(e.Documents) ? e.Documents.find(d => d.Type === "AAD") : null;
         const panDoc = Array.isArray(e.Documents) ? e.Documents.find(d => d.Type === "PAN") : null;
-        const imgUrl = e.ImageURL || e.ImageUrl || e.Image || docImg?.ImagePath || docImg?.ImageURL || res?.primaryRecord?.ImageURL || "";
+        const imgUrl = e.ImageURL || e.ImageUrl || e.Image || docImg?.ImagePath || docImg?.ImageURL || res?.primaryRecord?.ImageURL || e.Profileimg || e.profileimg || "";
         const aadharNum = e.AadharNo || e.Aadar_Number || (aadDoc ? aadDoc.Name : "");
         const panNum = e.CustPanNo || e.PanNo || e.Panname || (panDoc ? panDoc.Name : "");
         const itemDocs = [
