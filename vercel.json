@@ -1,6 +1,11 @@
 {
   "redirects": [
     {
+      "source": "/",
+      "destination": "/vrudhitabenrollment?branch=S1JN",
+      "permanent": false
+    },
+    {
       "source": "/tabqrgen",
       "destination": "/tabqrgen/",
       "permanent": false
