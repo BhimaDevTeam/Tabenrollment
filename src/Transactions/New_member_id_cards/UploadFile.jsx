@@ -305,30 +305,108 @@ const UploadDocument = ({
       )
         .trim()
         .toUpperCase();
-      setDocType(targetTypeId);
-      if (existingNo) {
-        setDocNumber(existingNo);
-      }
+      applyExistingDocNumber(targetTypeId, existingNo);
     }
   }, [docsMissingImage, docType]);
 
   const validateDocNumber = (docTypeId, docNum) => {
     const config = documentConfig[docTypeId];
     if (!config) return null;
-    return config.pattern.test(docNum.trim()) ? null : config.errorMessage;
+    return config.pattern.test(String(docNum || "").trim()) ? null : config.errorMessage;
+  };
+
+  // Pre-fill the existing document number only if it is valid for the selected type.
+  // Invalid legacy values (e.g. "NAME_DOB_MOBILE") are cleared so the user can type the correct number.
+  const applyExistingDocNumber = (typeId, existingNo) => {
+    setDocType(typeId);
+    if (existingNo && !validateDocNumber(typeId, existingNo)) {
+      setDocNumber(existingNo);
+      setDocNumberError("");
+    } else {
+      setDocNumber("");
+      setDocNumberError(
+        existingNo
+          ? `Existing document number "${existingNo}" is not valid. Please enter the correct number.`
+          : ""
+      );
+    }
+    setMessage("");
+  };
+
+  const resetUploadForm = () => {
+    setFile(null);
+    setPreview("");
+    setDocType("");
+    setDocNumber("");
+    setDocNumberError("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Reads the file and pushes the document to the parent immediately
+  const uploadDocument = (fileToUpload, typeId, number) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const mimeType = fileToUpload.type;
+      const base64String = String(reader.result || "").split(",")[1];
+      if (!base64String) {
+        setMessage("Base64 conversion failed.");
+        return;
+      }
+
+      const documentData = `data:${mimeType};base64,${base64String}`;
+      const selectedDoc = documentTypes.find(
+        (d) => Number(d.id) === Number(typeId)
+      );
+      let typeCode = selectedDoc?.typeCode[0];
+
+      if (typeCode === "NEF") {
+        typeCode = `NEF${getMembershipNumber()}`;
+      }
+
+      onFileUpload({
+        documentData,
+        docType: typeId,
+        docNumber: number.trim(),
+        verifyDocObj,
+        typeCode,
+      });
+
+      setMessage("Document uploaded successfully!");
+      resetUploadForm();
+    };
+
+    reader.onerror = () => {
+      setMessage("File read error.");
+    };
+
+    reader.readAsDataURL(fileToUpload);
   };
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
-    if (selectedFile) {
-      setFile(selectedFile);
-      setPreview(
-        selectedFile.type.startsWith("image/")
-          ? URL.createObjectURL(selectedFile)
-          : ""
-      );
-      setMessage("");
+    if (!selectedFile) return;
+
+    // Upload directly when the document number is already valid — no second "Upload" click needed
+    if (docType && docNumber && !validateDocNumber(docType, docNumber)) {
+      uploadDocument(selectedFile, docType, docNumber);
+      return;
     }
+
+    // Otherwise keep the file pending until a valid document number is entered
+    setFile(selectedFile);
+    setPreview(
+      selectedFile.type.startsWith("image/")
+        ? URL.createObjectURL(selectedFile)
+        : ""
+    );
+    setDocNumberError(
+      docNumber
+        ? validateDocNumber(docType, docNumber)
+        : "Please enter the document number, then click Upload."
+    );
+    setMessage("");
   };
 
   const handleDocTypeChange = (e) => {
@@ -352,11 +430,7 @@ const UploadDocument = ({
       .trim()
       .toUpperCase();
 
-    setDocNumber(existingNo);
-    setDocNumberError(
-      existingNo ? validateDocNumber(selectedTypeId, existingNo) : ""
-    );
-    setMessage("");
+    applyExistingDocNumber(selectedTypeId, existingNo);
   };
 
   const handleQuickUploadForDoc = (doc) => {
@@ -387,12 +461,7 @@ const UploadDocument = ({
       .trim()
       .toUpperCase();
 
-    setDocType(targetTypeId);
-    setDocNumber(existingNo);
-    setDocNumberError(
-      existingNo ? validateDocNumber(targetTypeId, existingNo) : ""
-    );
-    setMessage("");
+    applyExistingDocNumber(targetTypeId, existingNo);
 
     setTimeout(() => {
       if (fileInputRef.current && !fileInputRef.current.disabled) {
@@ -414,6 +483,7 @@ const UploadDocument = ({
     setMessage("");
   };
 
+  // Used only when a file was selected before a valid document number was entered
   const handleUpload = () => {
     if (!docType || !docNumber || !file) {
       setMessage("All fields are required.");
@@ -426,58 +496,11 @@ const UploadDocument = ({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const mimeType = file.type;
-      const base64String = reader.result.split(",")[1];
-      if (!base64String) {
-        setMessage("Base64 conversion failed.");
-        return;
-      }
-
-      const documentData = `data:${mimeType};base64,${base64String}`;
-      const selectedDoc = documentTypes.find(
-        (d) => Number(d.id) === Number(docType)
-      );
-      let typeCode = selectedDoc?.typeCode[0];
-
-      if (typeCode === "NEF") {
-        typeCode = `NEF${getMembershipNumber()}`;
-      }
-
-      onFileUpload({
-        documentData,
-        docType,
-        docNumber,
-        verifyDocObj,
-        typeCode,
-      });
-
-      setMessage("Document uploaded successfully!");
-      setFile(null);
-      setPreview("");
-      setDocType("");
-      setDocNumber("");
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    };
-
-    reader.onerror = () => {
-      setMessage("File read error.");
-    };
-
-    reader.readAsDataURL(file);
+    uploadDocument(file, docType, docNumber);
   };
 
   const handleDelete = () => {
-    setFile(null);
-    setPreview("");
-    setDocType("");
-    setDocNumber("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    resetUploadForm();
   };
 
   const isEkycEnabled =
@@ -618,9 +641,7 @@ const UploadDocument = ({
                   <Form.Control
                     type="file"
                     ref={fileInputRef}
-                    disabled={
-                      !docType || !docNumber || availableTypes.length === 0
-                    }
+                    disabled={!docType || availableTypes.length === 0}
                     accept="image/*,application/pdf"
                     onChange={handleFileChange}
                   />
