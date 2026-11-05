@@ -50,6 +50,22 @@ const Subscriberdetails = ({
   const [age, setAge] = useState(false);
   const [area, setArea] = useState("");
   const [addressInput, setAddressInput] = useState("");
+  const sanitizeDob = (dob) => {
+    if (!dob || typeof dob !== "string") return "";
+    const trimmed = dob.trim();
+    if (
+      !trimmed ||
+      trimmed.startsWith("1901-01-01") ||
+      trimmed.startsWith("1900-01-01") ||
+      trimmed.startsWith("01-01-1901") ||
+      trimmed.startsWith("01/01/1901") ||
+      trimmed.startsWith("01-01-1900") ||
+      trimmed.startsWith("01/01/1900")
+    ) {
+      return "";
+    }
+    return trimmed;
+  };
 
   useEffect(() => {
     if (newSubscriber) {
@@ -68,7 +84,7 @@ const Subscriberdetails = ({
         // newSubscriber.Address3
       ].filter(addr => addr && addr.trim()).join(", ");
 
-    ///////////////////Mohith Dev////////////////////////
+      ///////////////////Mohith Dev////////////////////////
       const combinedAddress = [
         newSubscriber?.Address1,
         newSubscriber?.Address2,
@@ -98,7 +114,7 @@ const Subscriberdetails = ({
           city: newSubscriber.City || prevFormData.city || "",
           state: newSubscriber.State || prevFormData.state || "",
           email: newEmail || prevFormData.email || "",
-          dob: newSubscriber.DateOf_Birth || newSubscriber.DateOfBirth || prevFormData.dob || "",
+          dob: flag.dob ? sanitizeDob(prevFormData.dob) : (sanitizeDob(newSubscriber.DateOf_Birth || newSubscriber.DateOfBirth) || sanitizeDob(prevFormData.dob) || ""),
         };
       });
       // setIsAadharDisabled(true);
@@ -114,7 +130,7 @@ const Subscriberdetails = ({
           F: "Female",
           O: "Others",
         };
-        
+
         setArea(customer.Locality || customer.Address3 || "");
 
         // Merge Address1, Address2, and Address3 into a single address
@@ -143,7 +159,7 @@ const Subscriberdetails = ({
             state: customer.State || prevFormData.state || "",
             pinCode: custPinCode || prevFormData.pinCode || "",
             email: custEmail || prevFormData.email || "",
-            dob: customer.DateOf_Birth || customer.DateOfBirth || prevFormData.dob || "",
+            dob: flag.dob ? sanitizeDob(prevFormData.dob) : (sanitizeDob(customer.DateOf_Birth || customer.DateOfBirth) || sanitizeDob(prevFormData.dob) || ""),
           };
         });
         setAddressInput((prevInput) =>
@@ -562,7 +578,7 @@ const Subscriberdetails = ({
         <PickDate
           dob={formData.dob}
           onDateChange={handleDateChange}
-          disabled={flag.dob ? false : formData.dob?.length}
+          disabled={isminorDisabled || (flag.dob ? false : Boolean(sanitizeDob(formData.dob)))}
           errorValidate={errorValidate}
           clearError={clearError}
         />
@@ -672,8 +688,7 @@ const Subscriberdetails = ({
 
 
           <div
-            className={`edit_add ${
-              newSubscriber || selectedId === "minor" || selectedId === "new" || selectedOption === "withoutAadhar"
+            className={`edit_add ${newSubscriber || selectedId === "minor" || selectedId === "new" || selectedOption === "withoutAadhar"
                 ? "hidden"
                 : ""
               }`}

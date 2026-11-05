@@ -53,7 +53,7 @@ const Mypage = () => {
   const { selectedCustomerID, selectedCountry, currencySymbol } = useSelector((state) => state.customer || {});
   // Singapore concept commented out - India live only
   const activeSymbol = "₹";
-  console.log("selectedCustomerID",selectedCustomerID)
+  console.log("selectedCustomerID", selectedCustomerID)
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -120,7 +120,7 @@ const Mypage = () => {
   const [uploadedDocs, setUploadedDocs] = useState(selectedCustomerID.Documents || []);
 
   const [paymentmode, setpaymentmode] = useState("");
-  const [draftIDData,setdraftIDData]= useState("")
+  const [draftIDData, setdraftIDData] = useState("")
   const [isSaving, setIsSaving] = useState(false);
   const [IsDisabledall, setIsDisabledall] = useState(false);
   const [alldocs, setAllDocs] = useState([]);// ALL FILES WILL BE STORED HERE IN ARRAY
@@ -260,7 +260,7 @@ const Mypage = () => {
           CustPanNo = uploadedPan.Name || uploadedPan.documentNo || "";
         }
       }
-      
+
       const aadharDoc = alldocs.find(d => Number(d.documentTypeId) === 29);
       let Aadar_Number = aadharNo || (aadharDoc ? aadharDoc.documentNo : "");
       if (!Aadar_Number && uploadedDocs) {
@@ -309,8 +309,8 @@ const Mypage = () => {
           String(membershipData.commodityTypeId) === "1"
             ? "Gold"
             : String(membershipData.commodityTypeId) === "5"
-            ? "Gold / Silver"
-            : "Silver",
+              ? "Gold / Silver"
+              : "Silver",
         SalesPersonName: "",
         AccountNo: bankData.accountNo || "",
         IFSC: bankData.ifscCode || "",
@@ -354,8 +354,8 @@ const Mypage = () => {
     }
   };
 
-  console.log("draftIDData",draftIDData)
-  console.log("alldocs",alldocs)
+  console.log("draftIDData", draftIDData)
+  console.log("alldocs", alldocs)
 
   //   useEffect(()=>{
   //  if(draftIDData)
@@ -450,7 +450,7 @@ const Mypage = () => {
       if (!subscriberData.gender) {
         errors.gender = "Gender is required.";
       }
-      if (!subscriberData.dob) {
+      if (!subscriberData.dob || String(subscriberData.dob).trim().startsWith("1901-01-01") || String(subscriberData.dob).trim().startsWith("1900-01-01")) {
         errors.dob = "Date of Birth is required.";
       }
       if (!subscriberData.mobileNo) {
@@ -734,6 +734,32 @@ const Mypage = () => {
     }
 
     // 7. Validate PAN for installment amount >= 1,43,000
+    // 7. Validate KYC document images and PAN for installment amount >= 1,43,000
+    const kycDocsInPreview = (uploadedDocs || []).filter(
+      (d) =>
+        d &&
+        d.Type !== "IMG" &&
+        Number(d.documentTypeId || d.DocumentTypeID) !== 30 &&
+        !d.Type?.startsWith?.("NEF") &&
+        !d.Type?.startsWith?.("SOD")
+    );
+    const docHasValidImg = (d) => {
+      if (!d) return false;
+      if (aadharverified === 1 || selectedCustomerID?.Isaadharverified === 1) return true;
+      if (d.imageError) return false;
+      const rawUrl = String(d.ImagePath || d.ImageURL || d.imagePath || d.ImageUrl || "").trim();
+      return Boolean(rawUrl && !rawUrl.startsWith("/images/"));
+    };
+    const missingImgInPreview = !isSingapore && aadharverified !== 1 ? kycDocsInPreview.find((d) => !docHasValidImg(d)) : null;
+    if (missingImgInPreview) {
+      const docNameLabel = missingImgInPreview.Type === "PAN" ? "PAN Card" : missingImgInPreview.Type === "AAD" ? "Aadhaar Card" : missingImgInPreview.Type || "Document";
+      toast.error(`Please upload the document image for ${docNameLabel}${missingImgInPreview.Name ? ` (${missingImgInPreview.Name})` : ""}.`);
+      setExpanded("uploaddoc-header");
+      setTimeout(() => {
+        document.getElementById("uploaddoc-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 200);
+      return false;
+    }
     const insAmt = Number(membershipData.installmentAmount || 0);
     const PAN_THRESHOLD = 143000;
     const hasPan =
@@ -790,7 +816,7 @@ const Mypage = () => {
       ]);
     }
   }, []);
-  const handleDraft = async() => {
+  const handleDraft = async () => {
     //  event.preventDefault();
     // alert("1 handledraft called")
     const errors = validateAllForms();
@@ -817,7 +843,7 @@ const Mypage = () => {
         toast.error(fieldError);
         setExpanded("nominee-header");
         seterrorValidate(errors.nominee);
-        return ;
+        return;
       }
       if (errors.guardian) {
         const fieldError = Object.values(errors.guardian)[0]; // Get the first field error
@@ -837,7 +863,7 @@ const Mypage = () => {
     // Proceed to save draft
     // alert("before savedraft fx")
     const docs = validatedocs();
-    console.log("docs caled",docs)
+    console.log("docs caled", docs)
     //  alert("docs present"+docs)
     if (docs) {
       // scro   llToTop()
@@ -845,7 +871,7 @@ const Mypage = () => {
         // alert(" inside savedraft response to back withn draftid in handledraft 4 ")
         const draftvalue = await saveDraft();  // IN RESPONSE WE ILL GET DRAFTID number like 809 
         // alert("draftvalue in handledraft aftr  response from savedraft sending this payment 5",draftvalue)
-        console.log("draftvalue in handledraft aftr  response from savedraft sending this payment",draftvalue)
+        console.log("draftvalue in handledraft aftr  response from savedraft sending this payment", draftvalue)
         return draftvalue;
       } else {
         // alert("Please capture the image.");
@@ -857,7 +883,7 @@ const Mypage = () => {
   };
 
   const selectedCustomerIDocument = selectedCustomerID.Documents ? selectedCustomerID.Documents : []
-  console.log("selectedCustomerIDocument",selectedCustomerIDocument)
+  console.log("selectedCustomerIDocument", selectedCustomerIDocument)
 
   useEffect(() => {
     if (!selectedCustomerID || Object.keys(selectedCustomerID).length === 0) {
@@ -940,7 +966,7 @@ const Mypage = () => {
         const docNo = doc.DocumentDescription || doc.DocumentDecription || doc.Name || doc.documentNo || "";
 
         // If Aadhaar or PAN has a number from CRM/eKYC but url is empty, assign dummy placeholder for UI/validation retention
-        if (!url && docNo) {
+        if (!url && docNo && (aadharverified === 1 || selectedCustomerID?.Isaadharverified === 1)) {
           if (typeCode === "AAD") url = "/images/aadhardummy.png";
           else if (typeCode === "PAN") url = "/images/pandummy.png";
         }
@@ -970,6 +996,28 @@ const Mypage = () => {
 
 
   //UploadedFile
+  const handleDocImageError = useCallback((brokenDoc) => {
+    if (!brokenDoc) return;
+    const targetTypeId = Number(brokenDoc.resolvedTypeId || brokenDoc.documentTypeId || brokenDoc.DocumentTypeID || 0);
+    const targetType = brokenDoc.Type;
+    setUploadedDocs((prev) =>
+      (prev || []).map((d) =>
+        (targetTypeId && Number(d.documentTypeId || d.DocumentTypeID) === targetTypeId) ||
+          (targetType && d.Type === targetType)
+          ? { ...d, ImagePath: "", ImageURL: "", imagePath: "", imageError: true }
+          : d
+      )
+    );
+    setAllDocs((prev) =>
+      (prev || []).map((d) =>
+        (targetTypeId && Number(d.documentTypeId || d.DocumentTypeID) === targetTypeId) ||
+          (targetType && d.Type === targetType)
+          ? { ...d, ImagePath: "", ImageURL: "", imagePath: "", imageError: true }
+          : d
+      )
+    );
+  }, []);
+
   const handleFileUpload = (data) => {
     setUploadedFile(data); // Store the document data
     if (data) {
@@ -1016,15 +1064,15 @@ const Mypage = () => {
   //   console.log("Uploaded File Data:", data); // Log the data for debugging
   // };
 
-//   const SetFirstElement = () => {
-//     const element = document.querySelector(`#subscriber-header`);
-//     if (element) {
-//       element.scrollIntoView({
-//         behavior: "smooth",
-//         block: "start",
-//       });
-//     }
-//   };
+  //   const SetFirstElement = () => {
+  //     const element = document.querySelector(`#subscriber-header`);
+  //     if (element) {
+  //       element.scrollIntoView({
+  //         behavior: "smooth",
+  //         block: "start",
+  //       });
+  //     }
+  //   };
 
   const saveDraft = async (overrideMode) => {
     // alert("in savdraaft called 2")
@@ -1047,6 +1095,32 @@ const Mypage = () => {
         return;
       }
 
+      // 7. Validate KYC document images and PAN for installment amount >= 1,43,000
+      const kycDocsInPreview = (uploadedDocs || []).filter(
+        (d) =>
+          d &&
+          d.Type !== "IMG" &&
+          Number(d.documentTypeId || d.DocumentTypeID) !== 30 &&
+          !d.Type?.startsWith?.("NEF") &&
+          !d.Type?.startsWith?.("SOD")
+      );
+      const docHasValidImg = (d) => {
+        if (!d) return false;
+        if (aadharverified === 1 || selectedCustomerID?.Isaadharverified === 1) return true;
+        if (d.imageError) return false;
+        const rawUrl = String(d.ImagePath || d.ImageURL || d.imagePath || d.ImageUrl || "").trim();
+        return Boolean(rawUrl && !rawUrl.startsWith("/images/"));
+      };
+      const missingImgInPreview = !isSingapore && aadharverified !== 1 ? kycDocsInPreview.find((d) => !docHasValidImg(d)) : null;
+      if (missingImgInPreview) {
+        const docNameLabel = missingImgInPreview.Type === "PAN" ? "PAN Card" : missingImgInPreview.Type === "AAD" ? "Aadhaar Card" : missingImgInPreview.Type || "Document";
+        toast.error(`Please upload the document image for ${docNameLabel}${missingImgInPreview.Name ? ` (${missingImgInPreview.Name})` : ""}.`);
+        setExpanded("uploaddoc-header");
+        setTimeout(() => {
+          document.getElementById("uploaddoc-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 200);
+        return false;
+      }
       const insAmt = Number(membershipData.installmentAmount || 0);
       const PAN_THRESHOLD = 143000;
       const hasPan = (uploadedDocs || []).some(d => d.Type === "PAN" || d.Type === "NRIC") || (alldocs || []).some(d => d.documentTypeId === 25);
@@ -1437,7 +1511,7 @@ const Mypage = () => {
       setExpanded("subscriber-header");
       return false;
     }
-  
+
     const gub = On_click_guardian_validation();
     if (gub) {
       setExpanded("guardian-header");
@@ -1553,7 +1627,32 @@ const Mypage = () => {
     }
 
     // Check if any address proof document is uploaded
-    const isAddressUploaded = uploadedDocs.some(
+    const kycDocsForValidation = (uploadedDocs || []).filter(
+      (doc) =>
+        doc &&
+        doc.Type !== "IMG" &&
+        Number(doc.documentTypeId || doc.DocumentTypeID) !== 30 &&
+        !doc.Type?.startsWith?.("NEF") &&
+        !doc.Type?.startsWith?.("SOD")
+    );
+    const hasDocImage = (doc) => {
+      if (!doc) return false;
+      if (aadharverified === 1 || selectedCustomerID?.Isaadharverified === 1) return true;
+      if (doc.imageError) return false;
+      const rawUrl = String(doc.ImagePath || doc.ImageURL || doc.imagePath || doc.ImageUrl || "").trim();
+      return Boolean(rawUrl && !rawUrl.startsWith("/images/"));
+    };
+    const missingImgDoc = !isSingapore && aadharverified !== 1 ? kycDocsForValidation.find((doc) => !hasDocImage(doc)) : null;
+    if (missingImgDoc) {
+      const docNameLabel = missingImgDoc.Type === "PAN" ? "PAN Card" : missingImgDoc.Type === "AAD" ? "Aadhaar Card" : missingImgDoc.Type || "Document";
+      toast.error(`Please upload the document image for ${docNameLabel}${missingImgDoc.Name ? ` (${missingImgDoc.Name})` : ""}.`);
+      setExpanded("uploaddoc-header");
+      return false;
+    }
+    const isAddressUploaded = kycDocsForValidation.some(
+      (doc) => ["AAD", "DRI", "VOT", "PAS", "PAN", "NRIC"].includes(doc.Type) && hasDocImage(doc)
+    );
+    const unused = uploadedDocs.some(
       (doc) => ["AAD", "DRI", "VOT", "PAS", "PAN", "NRIC"].includes(doc.Type)
     );
 
@@ -1597,7 +1696,7 @@ const Mypage = () => {
       return false;
     }
 
-    const bank= On_click_bank_validation();
+    const bank = On_click_bank_validation();
     if (bank) {
       setExpanded("bank-header");
       return false;
@@ -1667,7 +1766,7 @@ const Mypage = () => {
           const isaadharVerified = aadharverified || 0;
           const aadhar_No = aadharNo ? aadharNo : null;
           const cleanBranch = getCleanBranch(branch || membershipData.branch);
-          
+
           const mob = subscriberData.mobileNo;
           // Signature / enrollment PDF is not used on offline update
           // let signRequestId =
@@ -1704,7 +1803,7 @@ const Mypage = () => {
         // No existing draft, create new one with offline payment
         const handle = await saveDraft(activeMode);
         console.log("handle in mypage for new offline draft", handle);
-        if(handle) {
+        if (handle) {
           setopenofflineModal(true);
         }
         return handle;
@@ -2015,6 +2114,7 @@ const Mypage = () => {
               noOfInstallments={noOfInstallments}
               schemename={membershipData.selectedSchemeName}
               onFileUpload={handleFileUpload}
+              onDocImageError={handleDocImageError}
               uploadedDocs={uploadedDocs}
               onEkyc={() => setEkycQROpen(true)}
               aadharverified={aadharverified}
@@ -2032,7 +2132,7 @@ const Mypage = () => {
           }
           sx={{
             background: "linear-gradient(103.45deg, rgb(97, 65, 25) -11.68%, rgb(205, 154, 80) 48.54%, rgb(97, 65, 25) 108.76%)", // same beige gradient
-            color:"#fff",
+            color: "#fff",
             borderRadius: "10px",
             boxShadow: "0 2px 6px rgba(0,0,0,0.05)", // very subtle shadow
           }}
@@ -2063,10 +2163,10 @@ const Mypage = () => {
       </Box> */}
 
             <Box>
-              <Typography sx={{  color:  "#fff" }}>
+              <Typography sx={{ color: "#fff" }}>
                 Camera
               </Typography>
-              <Typography sx={{ fontSize: "14px", color:  "#fff" }}>
+              <Typography sx={{ fontSize: "14px", color: "#fff" }}>
                 Click on the Camera to Capture your Photo
               </Typography>
             </Box>

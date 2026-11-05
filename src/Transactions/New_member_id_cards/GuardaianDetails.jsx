@@ -63,7 +63,7 @@ const GuardaianDetails = ({ setGuardianData, errorValidate, clearError }) => {
           guardname: Name || Aadharname,
           guardGender: genderMap[Sex],
           guardrelationship: '',
-          guarddob: DateOfBirth,
+          guarddob: DateOfBirth && !String(DateOfBirth).trim().startsWith("1901-01-01") && !String(DateOfBirth).trim().startsWith("1900-01-01") ? DateOfBirth : "",
         }
         setIsEdit(true)
         setFormData(obj)
@@ -229,7 +229,7 @@ const GuardaianDetails = ({ setGuardianData, errorValidate, clearError }) => {
           </Form.Group>
           <Form.Group controlId="formGuardianDob">
 
-            <PickDate dob={formData.guarddob} onDateChange={handleDateChange} label="Guardian DOB*:"  disabled={isEdit &&  storeObj.guardname}/>
+            <PickDate dob={formData.guarddob} onDateChange={handleDateChange} label="Guardian DOB*:"  disabled={isEdit && Boolean(storeObj.guarddob)}/>
             {errorValidate.guarddob && <Form.Text className="text-danger">{errorValidate.guarddob}</Form.Text>}
             {/* {formData.guarddob && calculateAge(formData.guarddob) <= 18 && (
             <Form.Text className="text-danger">
