@@ -760,20 +760,67 @@ const Mypage = () => {
       }, 200);
       return false;
     }
+    // 7. Validate PAN for installment amount >= 1,43,000 (strictly mandatory with valid number & image)
     const insAmt = Number(membershipData.installmentAmount || 0);
     const PAN_THRESHOLD = 143000;
-    const hasPan =
-      (uploadedDocs || []).some((d) => d.Type === "PAN" || d.Type === "NRIC") ||
-      (alldocs || []).some((d) => d.documentTypeId === 25);
-    if (!isSingapore && insAmt >= PAN_THRESHOLD && !hasPan) {
-      toast.error(
-        `For installment amount ₹${insAmt.toLocaleString("en-IN")}, PAN Card is mandatory. Please upload PAN Card.`
+    if (!isSingapore && insAmt >= PAN_THRESHOLD) {
+      const panDoc =
+        (uploadedDocs || []).find(
+          (d) =>
+            d &&
+            (d.Type === "PAN" ||
+              d.Type === "NRIC" ||
+              Number(d.documentTypeId || d.DocumentTypeID) === 25)
+        ) ||
+        (alldocs || []).find(
+          (d) =>
+            d &&
+            (d.Type === "PAN" ||
+              Number(d.documentTypeId || d.DocumentTypeID) === 25)
+        );
+
+      const panNum = String(
+        panDoc?.Name ||
+          panDoc?.documentNo ||
+          panDoc?.docNumber ||
+          panDoc?.DocumentDescription ||
+          panDoc?.DocumentDecription ||
+          ""
+      )
+        .trim()
+        .toUpperCase();
+
+      const rawUrl = String(
+        panDoc?.ImagePath ||
+          panDoc?.ImageURL ||
+          panDoc?.imagePath ||
+          panDoc?.ImageUrl ||
+          ""
+      ).trim();
+
+      const hasValidImg = Boolean(
+        rawUrl && !rawUrl.startsWith("/images/") && !panDoc?.imageError
       );
-      setExpanded("uploaddoc-header");
-      setTimeout(() => {
-        document.getElementById("uploaddoc-header")?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 200);
-      return false;
+      const isNumValid = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNum);
+
+      if (!panDoc || !isNumValid || !hasValidImg) {
+        let msg = `For installment amount ₹${insAmt.toLocaleString("en-IN")} (₹1,43,000 & above), PAN Card is mandatory.`;
+        if (!panDoc || !panNum) {
+          msg += " Please upload PAN Card before saving.";
+        } else if (!isNumValid) {
+          msg += ` PAN number "${panNum}" is invalid. Please enter a valid 10-character PAN number and upload PAN Card.`;
+        } else if (!hasValidImg) {
+          msg += " PAN Card image is missing. Please upload the PAN Card image before saving.";
+        }
+        toast.error(msg);
+        setExpanded("uploaddoc-header");
+        setTimeout(() => {
+          document
+            .getElementById("uploaddoc-header")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 200);
+        return false;
+      }
     }
 
     return true;
@@ -1123,10 +1170,53 @@ const Mypage = () => {
       }
       const insAmt = Number(membershipData.installmentAmount || 0);
       const PAN_THRESHOLD = 143000;
-      const hasPan = (uploadedDocs || []).some(d => d.Type === "PAN" || d.Type === "NRIC") || (alldocs || []).some(d => d.documentTypeId === 25);
-      if (!isSingapore && insAmt >= PAN_THRESHOLD && !hasPan) {
-        alert(`For installment amount ₹${insAmt.toLocaleString("en-IN")} (₹1,43,000 & above), PAN Card is mandatory. Please upload your PAN Card.`);
-        return;
+      if (!isSingapore && insAmt >= PAN_THRESHOLD) {
+        const panDoc =
+          (uploadedDocs || []).find(
+            (d) =>
+              d &&
+              (d.Type === "PAN" ||
+                d.Type === "NRIC" ||
+                Number(d.documentTypeId || d.DocumentTypeID) === 25)
+          ) ||
+          (alldocs || []).find(
+            (d) =>
+              d &&
+              (d.Type === "PAN" ||
+                Number(d.documentTypeId || d.DocumentTypeID) === 25)
+          );
+
+        const panNum = String(
+          panDoc?.Name ||
+            panDoc?.documentNo ||
+            panDoc?.docNumber ||
+            panDoc?.DocumentDescription ||
+            panDoc?.DocumentDecription ||
+            ""
+        )
+          .trim()
+          .toUpperCase();
+
+        const rawUrl = String(
+          panDoc?.ImagePath ||
+            panDoc?.ImageURL ||
+            panDoc?.imagePath ||
+            panDoc?.ImageUrl ||
+            ""
+        ).trim();
+
+        const hasValidImg = Boolean(
+          rawUrl && !rawUrl.startsWith("/images/") && !panDoc?.imageError
+        );
+        const isNumValid = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNum);
+
+        if (!panDoc || !isNumValid || !hasValidImg) {
+          toast.error(
+            `For installment amount ₹${insAmt.toLocaleString("en-IN")} (₹1,43,000 & above), PAN Card is mandatory. Please upload PAN Card before saving.`
+          );
+          setExpanded("uploaddoc-header");
+          return false;
+        }
       }
 
       setIsSaving(true);
@@ -1659,6 +1749,64 @@ const Mypage = () => {
     console.log("uploadedDocs", uploadedDocs);
     console.log("isAddressUploaded", isAddressUploaded);
     console.log("aadharverified", aadharverified);
+
+    // If installment amount is >= 143000, PAN Card is strictly mandatory with valid number & image
+    const insAmt = Number(membershipData.installmentAmount || 0);
+    const PAN_THRESHOLD = 143000;
+    if (!isSingapore && insAmt >= PAN_THRESHOLD) {
+      const panDoc =
+        (uploadedDocs || []).find(
+          (d) =>
+            d &&
+            (d.Type === "PAN" ||
+              d.Type === "NRIC" ||
+              Number(d.documentTypeId || d.DocumentTypeID) === 25)
+        ) ||
+        (alldocs || []).find(
+          (d) =>
+            d &&
+            (d.Type === "PAN" ||
+              Number(d.documentTypeId || d.DocumentTypeID) === 25)
+        );
+
+      const panNum = String(
+        panDoc?.Name ||
+          panDoc?.documentNo ||
+          panDoc?.docNumber ||
+          panDoc?.DocumentDescription ||
+          panDoc?.DocumentDecription ||
+          ""
+      )
+        .trim()
+        .toUpperCase();
+
+      const rawUrl = String(
+        panDoc?.ImagePath ||
+          panDoc?.ImageURL ||
+          panDoc?.imagePath ||
+          panDoc?.ImageUrl ||
+          ""
+      ).trim();
+
+      const hasValidImg = Boolean(
+        rawUrl && !rawUrl.startsWith("/images/") && !panDoc?.imageError
+      );
+      const isNumValid = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(panNum);
+
+      if (!panDoc || !isNumValid || !hasValidImg) {
+        let msg = `For installment amount ₹${insAmt.toLocaleString("en-IN")} (₹1,43,000 & above), PAN Card is mandatory.`;
+        if (!panDoc || !panNum) {
+          msg += " Please upload PAN Card before proceeding.";
+        } else if (!isNumValid) {
+          msg += ` PAN number "${panNum}" is invalid. Please enter a valid 10-character PAN number.`;
+        } else if (!hasValidImg) {
+          msg += " PAN Card image is missing. Please upload PAN Card image.";
+        }
+        toast.error(msg);
+        setExpanded("uploaddoc-header");
+        return false;
+      }
+    }
 
     // Only require address proof for India if not Aadhaar e-verified AND no documents uploaded
     if (!isSingapore && !isAddressUploaded && aadharverified !== 1) {

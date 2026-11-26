@@ -38,6 +38,16 @@ export const resolveDocImageUrl = (doc, isAadharVerified) => {
   return `https://vrudhi.bhima.info/DraftEnrollmentApi/${clean}`;
 };
 
+// True when the document image was uploaded / captured in this session (Base64 data URL),
+// as opposed to an image URL returned by the server.
+const isManualUpload = (doc) => {
+  if (!doc) return false;
+  const raw = String(
+    doc.ImagePath || doc.ImageURL || doc.imagePath || doc.ImageUrl || ""
+  ).trim();
+  return raw.startsWith("data:") || raw.startsWith("blob:");
+};
+
 const UploadDocument = ({
   amount,
   noOfInstallments,
@@ -78,11 +88,21 @@ const UploadDocument = ({
   const insAmt = Number(amount || 0);
   const PAN_THRESHOLD = 143000;
   const isHighValue = insAmt >= PAN_THRESHOLD;
-  const hasPanUploaded = (uploadedDocs || []).some(
-    (doc) =>
-      (doc.Type === "PAN" || doc.Type === "NRIC") &&
-      (aadharverified === 1 || docHasValidImage(doc))
-  );
+  const hasPanUploaded = (uploadedDocs || []).some((doc) => {
+    if (
+      doc.Type !== "PAN" &&
+      doc.Type !== "NRIC" &&
+      Number(doc.documentTypeId || doc.DocumentTypeID) !== 25
+    ) {
+      return false;
+    }
+    const num = String(doc.Name || doc.documentNo || "").trim().toUpperCase();
+    const isNumValid = isSingapore
+      ? /^[STFGM][0-9]{7}[A-Z]$/i.test(num)
+      : /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(num);
+    const hasImg = docHasValidImage(doc);
+    return isNumValid && hasImg;
+  });
   const isPanRequiredManually = isHighValue && !hasPanUploaded && !isSingapore;
 
   const { data: sgDocList } = useSWR(
@@ -212,7 +232,8 @@ const UploadDocument = ({
     return documentTypes.filter((doc) => {
       if (excludedNames.includes(doc.name)) return false;
 
-      // Exclude only if the same document type is already uploaded WITH a valid image
+      // Exclude only if the same document type already has an image returned from the server URL.
+      // Manually uploaded / captured documents (data: URLs) stay selectable so they can be re-uploaded.
       return !(uploadedDocs || []).some((uploaded) => {
         const uploadedTypeName = documentTypes.find((d) =>
           d.typeCode.includes(uploaded.Type)
@@ -220,7 +241,7 @@ const UploadDocument = ({
         const resolved = resolveDocImageUrl(uploaded, aadharverified);
         const hasValidImg =
           Boolean(resolved) && !uploaded.imageError && !brokenImageUrls[resolved];
-        return uploadedTypeName === doc.name && hasValidImg;
+        return uploadedTypeName === doc.name && hasValidImg && !isManualUpload(uploaded);
       });
     });
   }, [uploadedDocs, documentTypes, brokenImageUrls, aadharverified]);
@@ -828,6 +849,29 @@ const UploadDocument = ({
                               style={{ marginRight: "4px" }}
                             ></i>
                             Upload Image
+                          </Button>
+                        </div>
+                      )}
+                      {hasValidImg && isManualUpload(doc) && (
+                        <div style={{ marginTop: "6px" }}>
+                          <Button
+                            size="sm"
+                            variant="outline-secondary"
+                            onClick={() => handleQuickUploadForDoc(doc)}
+                            title="Replace this uploaded / captured image"
+                            style={{
+                              fontSize: "11px",
+                              padding: "2px 8px",
+                              fontWeight: "600",
+                              color: "#614119",
+                              borderColor: "#cd9a50",
+                            }}
+                          >
+                            <i
+                              className="bi bi-arrow-repeat"
+                              style={{ marginRight: "4px" }}
+                            ></i>
+                            Re-upload
                           </Button>
                         </div>
                       )}
